@@ -798,7 +798,7 @@ class MainActivity : Activity(), BleProvisioningClient.Listener, Esp32DiscoveryC
 
     private fun updateSimulatorNavigation(packet: HudNavigationPacket) {
         if (::displaySimulatorView.isInitialized) {
-            displaySimulatorView.updateNavigation(packet.withHudBitmaps())
+            displaySimulatorView.updateNavigation(packet.withRenderedHudBitmaps())
         }
     }
 
@@ -811,31 +811,6 @@ class MainActivity : Activity(), BleProvisioningClient.Listener, Esp32DiscoveryC
                 hudLanguage = ProvisioningStore.hudLanguage(this)
             )
         }
-    }
-
-    private fun Intent.toHudNavigationPacket(): HudNavigationPacket {
-        return HudNavigationPacket.fromHeadunitValues(
-            distanceMeters = getIntExtra(HeadunitRevivedBroadcast.EXTRA_DISTANCE_METERS, -1),
-            timeSeconds = getIntExtra(HeadunitRevivedBroadcast.EXTRA_TIME_SECONDS, -1),
-            road = getStringExtra(HeadunitRevivedBroadcast.EXTRA_ROAD),
-            nextEventType = getIntExtra(
-                HeadunitRevivedBroadcast.EXTRA_NEXT_EVENT_TYPE,
-                HeadunitNavEvent.UNKNOWN.wireValue
-            ),
-            turnSide = getIntExtra(
-                HeadunitRevivedBroadcast.EXTRA_TURN_SIDE,
-                TurnSide.UNSPECIFIED.wireValue
-            ),
-            turnNumber = getIntExtra(HeadunitRevivedBroadcast.EXTRA_TURN_NUMBER, -1),
-            turnAngle = getIntExtra(HeadunitRevivedBroadcast.EXTRA_TURN_ANGLE, -1)
-        )
-    }
-
-    private fun HudNavigationPacket.withHudBitmaps(): HudNavigationPacket {
-        return copy(
-            roadBitmap = HudRoadBitmapRenderer.render(road),
-            iconBitmap = HudManeuverIconBitmapRenderer.render(eventType, turnSide)
-        )
     }
 
     private fun navigationBroadcastValues(intent: Intent): List<NavigationBroadcastValue> {
@@ -1116,7 +1091,7 @@ class MainActivity : Activity(), BleProvisioningClient.Listener, Esp32DiscoveryC
             turnSide = TurnSide.RIGHT.wireValue,
             turnNumber = -1,
             turnAngle = -1
-        ).withHudBitmaps()
+        ).withRenderedHudBitmaps()
         bridgeStatus = bridgeStatus.copy(
             headunitState = HeadunitObservedState.NAVIGATION_ACTIVE,
             hudOutputState = HudOutputState.NAVIGATION_GUIDANCE,

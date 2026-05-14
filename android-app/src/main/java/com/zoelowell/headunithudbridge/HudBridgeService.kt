@@ -85,15 +85,7 @@ class HudBridgeService : Service(), Esp32DiscoveryClient.Listener {
                     if (!navigationFreshnessGate.shouldAccept(intent.toNavigationFreshnessSample())) {
                         return
                     }
-                    val packet = HudNavigationPacket.fromHeadunitValues(
-                        distanceMeters = intent.getIntExtra(HeadunitRevivedBroadcast.EXTRA_DISTANCE_METERS, -1),
-                        timeSeconds = intent.getIntExtra(HeadunitRevivedBroadcast.EXTRA_TIME_SECONDS, -1),
-                        road = intent.getStringExtra(HeadunitRevivedBroadcast.EXTRA_ROAD),
-                        nextEventType = intent.getIntExtra(HeadunitRevivedBroadcast.EXTRA_NEXT_EVENT_TYPE, HeadunitNavEvent.UNKNOWN.wireValue),
-                        turnSide = intent.getIntExtra(HeadunitRevivedBroadcast.EXTRA_TURN_SIDE, TurnSide.UNSPECIFIED.wireValue),
-                        turnNumber = intent.getIntExtra(HeadunitRevivedBroadcast.EXTRA_TURN_NUMBER, -1),
-                        turnAngle = intent.getIntExtra(HeadunitRevivedBroadcast.EXTRA_TURN_ANGLE, -1)
-                    ).withHudBitmaps()
+                    val packet = intent.toHudNavigationPacket().withRenderedHudBitmaps()
                     executor.execute {
                         val navigationSent = sendPayload(hudState.onNavigationPacket(packet))
                         val speedSent = sendPayload(speedState.currentPacket().toJson())
@@ -110,13 +102,6 @@ class HudBridgeService : Service(), Esp32DiscoveryClient.Listener {
                 }
             }
         }
-    }
-
-    private fun HudNavigationPacket.withHudBitmaps(): HudNavigationPacket {
-        return copy(
-            roadBitmap = HudRoadBitmapRenderer.render(road),
-            iconBitmap = HudManeuverIconBitmapRenderer.render(eventType, turnSide)
-        )
     }
 
     override fun onCreate() {
