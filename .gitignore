@@ -1,0 +1,25 @@
+# Android / Gradle
+.gradle/
+build/
+local.properties
+*.iml
+.idea/
+.classpath
+.factorypath
+.project
+.settings/
+**/bin/
+android-app/build/
+
+# ESP32 / PlatformIO
+esp32-hud/.pio/
+esp32-hud/.vscode/
+esp32-hud/include/config.h
+
+# OS
+Thumbs.db
+.DS_Store
+
+# Local brainstorming mockups
+.superpowers/
+docs/superpowers/plans/
