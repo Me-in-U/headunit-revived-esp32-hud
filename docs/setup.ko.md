@@ -4,6 +4,14 @@
 
 이 문서는 Headunit Revived ESP32 HUD 브리지를 Android 태블릿, ESP32 firmware, OLED wiring, Wi-Fi 경로까지 한 번에 설정하기 위한 가이드입니다.
 
+## 참고 스크린샷
+
+| Android bridge dashboard | ESP32 OLED HUD |
+| --- | --- |
+| [![Android bridge dashboard](assets/bridge-screen.png)](assets/bridge-screen.png) | [![ESP32 OLED HUD](assets/hud.png)](assets/hud.png) |
+
+대시보드 스크린샷은 Headunit과 ESP32가 online인 setup screen 상태를 보여줍니다. HUD 사진은 display 1에 speed, display 2에 maneuver guidance를 표시하는 실제 2-display 배치를 보여줍니다.
+
 ## 준비물
 
 - Headunit Revived GitHub build가 설치된 Android 태블릿.

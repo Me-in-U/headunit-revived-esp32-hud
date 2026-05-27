@@ -36,6 +36,14 @@ Headunit Revived의 내비게이션 안내를 ESP32 기반 소형 OLED HUD에 �
 
 HUD packet은 fire-and-forget 방식입니다. ESP32는 실시간 내비게이션 패킷에 ACK를 보내지 않으므로, 지연된 return traffic이 현재 안내를 늦추지 않습니다.
 
+## 스크린샷
+
+| Android bridge dashboard | ESP32 OLED HUD |
+| --- | --- |
+| [![Android bridge dashboard](docs/assets/bridge-screen.png)](docs/assets/bridge-screen.png) | [![ESP32 OLED HUD](docs/assets/hud.png)](docs/assets/hud.png) |
+
+이미지를 누르면 원본 크기로 열 수 있습니다.
+
 ## 빠른 시작
 
 Android 쪽 build/test:

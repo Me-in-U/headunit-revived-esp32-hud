@@ -36,6 +36,14 @@ This project is an experimental companion stack. It does not fork Headunit Reviv
 
 HUD packets are fire-and-forget. ESP32 does not ACK live navigation packets, so delayed return traffic cannot slow down current guidance.
 
+## Screenshots
+
+| Android bridge dashboard | ESP32 OLED HUD |
+| --- | --- |
+| [![Android bridge dashboard](docs/assets/bridge-screen.png)](docs/assets/bridge-screen.png) | [![ESP32 OLED HUD](docs/assets/hud.png)](docs/assets/hud.png) |
+
+Click either image to open the full-size reference.
+
 ## Quick Start
 
 Build and test the Android side:

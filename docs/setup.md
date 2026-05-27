@@ -4,6 +4,14 @@
 
 This guide covers the full Android tablet, ESP32 firmware, OLED wiring, and Wi-Fi path for the Headunit Revived ESP32 HUD bridge.
 
+## Reference Screenshots
+
+| Android bridge dashboard | ESP32 OLED HUD |
+| --- | --- |
+| [![Android bridge dashboard](assets/bridge-screen.png)](assets/bridge-screen.png) | [![ESP32 OLED HUD](assets/hud.png)](assets/hud.png) |
+
+The dashboard screenshot shows the setup screen after Headunit and ESP32 are online. The HUD photo shows the physical two-display layout with speed on display 1 and maneuver guidance on display 2.
+
 ## Prerequisites
 
 - Android tablet with the GitHub build of Headunit Revived installed.
