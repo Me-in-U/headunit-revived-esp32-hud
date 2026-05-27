@@ -1,48 +1,63 @@
-# Setup Notes
+# Setup Guide
 
-## Android Tablet
+[English](setup.md) | [한국어](setup.ko.md) | [Project README](../README.md)
 
-1. Install the GitHub build of Headunit Revived.
-2. Install the HUD Bridge Android app from this repository.
-3. Connect the tablet to the phone hotspot.
+This guide covers the full Android tablet, ESP32 firmware, OLED wiring, and Wi-Fi path for the Headunit Revived ESP32 HUD bridge.
+
+## Prerequisites
+
+- Android tablet with the GitHub build of Headunit Revived installed.
+- HUD Bridge Android app built from this repository.
+- ESP32-S3-N16R8 style board.
+- Two 128x64 I2C OLED displays.
+- Phone hotspot or another Wi-Fi network that allows tablet-to-ESP32 UDP traffic.
+- Android SDK for app builds.
+- PlatformIO for ESP32 builds.
+
+## Android Tablet Setup
+
+1. Install Headunit Revived on the tablet.
+2. Install the HUD Bridge Android app.
+3. Connect the tablet to the same phone hotspot or Wi-Fi network that ESP32 will use.
 4. Open HUD Bridge and grant the permissions shown in the `권한 / 백그라운드` card.
-5. In the `핫스팟 Wi-Fi` card, tap `수정` if needed and enter the phone hotspot SSID/password. The app stores those values automatically.
-6. Tap `BLE로 ESP 연결` so the app can provision ESP32.
-7. The app waits for Android Auto projection or the first navigation update, then automatically searches for ESP32 on Wi-Fi.
-8. Watch the `상태` card. Headunit should move from `offline` to `online`; ESP32 should move through `connecting` to `connected`. If automatic discovery fails while Headunit is online, the card shows the next retry countdown.
-9. If the target is empty or stale before Android Auto starts, tap `Wi-Fi 검색` in the `ESP32 대상` card.
-10. Use `ESP32 디버그 영역 표시` to show or hide the OLED top/bottom debug rows.
-11. Tap `백그라운드 허용` and approve Android's battery optimization exception if the tablet shows the prompt.
-12. Tap `테스트 전송` and confirm the Android app reports that the UDP packet was sent and the ESP32 serial monitor prints a HUD message.
-13. Start Android Auto projection in Headunit Revived.
-14. Start route guidance in the phone navigation app.
+5. In `핫스팟 Wi-Fi`, tap `수정` if needed and enter the hotspot SSID/password.
+6. Tap `BLE로 ESP 연결` to provision ESP32 over Bluetooth LE.
+7. Start Android Auto projection in Headunit Revived.
+8. Start route guidance from the phone navigation app.
 
-## ESP32
+The app waits for Android Auto projection or the first navigation update before automatic ESP32 Wi-Fi discovery. Manual discovery is still available through `Wi-Fi 검색`.
 
-The current PlatformIO environment targets an ESP32-S3-N16R8 style board:
+## ESP32 Firmware Setup
 
-```ini
-[env:esp32-s3-n16r8]
-board = esp32-s3-n16r8
+Build the firmware:
+
+```powershell
+platformio run -d esp32-hud -e esp32-s3-n16r8
 ```
 
-1. Flash with PlatformIO: `platformio run -d esp32-hud -e esp32-s3-n16r8 -t upload`.
-2. Open serial monitor at `115200`.
-3. Confirm the log says BLE provisioning is advertising.
-4. Provision it from the Android app over Bluetooth.
-5. Confirm the log prints the Wi-Fi IP address.
-6. Confirm the BLE status log includes a compact connected payload with IP, for example `{"s":"c","i":"10.233.116.145"}`.
-7. Confirm packets print when the Android app sends a test packet or Headunit Revived receives navigation updates.
+Flash the firmware:
+
+```powershell
+platformio run -d esp32-hud -e esp32-s3-n16r8 -t upload
+```
+
+Open the serial monitor at `115200` and confirm:
+
+1. BLE provisioning is advertising.
+2. ESP32 receives Wi-Fi credentials from the Android app.
+3. ESP32 prints a Wi-Fi IP address.
+4. BLE status includes a compact connected payload such as `{"s":"c","i":"10.233.116.145"}`.
+5. UDP packets print when Android sends a test packet or Headunit Revived receives navigation updates.
 
 If serial logs do not appear after flashing over native USB, reconnect the board or press reset. The firmware enables USB CDC on boot with `ARDUINO_USB_CDC_ON_BOOT=1`.
 
-`esp32-hud/include/config.h` is optional. If it exists and contains `HUD_WIFI_SSID` and `HUD_WIFI_PASSWORD`, ESP32 can auto-connect without BLE after flashing. For normal use, prefer BLE provisioning so credentials are not committed to the repository.
+`esp32-hud/include/config.h` is optional. If it defines `HUD_WIFI_SSID` and `HUD_WIFI_PASSWORD`, ESP32 can auto-connect after flashing. For normal use, prefer BLE provisioning so credentials are not committed to the repository.
 
 ## OLED Wiring
 
-The firmware targets two 1.3 inch 128x64 I2C OLEDs. Many 1.3 inch modules sold as SSD1306-compatible actually use an SH1106 controller, so the default driver is SH1106.
+The firmware targets two 1.3 inch 128x64 I2C OLEDs. The default driver is SH1106 because many 1.3 inch modules sold as SSD1306-compatible use SH1106 controllers.
 
-Default display 1 wiring:
+Display 1 wiring:
 
 | OLED Pin | ESP32-S3 Pin |
 | --- | --- |
@@ -51,7 +66,7 @@ Default display 1 wiring:
 | SDA | GPIO 8 |
 | SCL | GPIO 9 |
 
-Default display 2 wiring:
+Display 2 wiring:
 
 | OLED Pin | ESP32-S3 Pin |
 | --- | --- |
@@ -60,9 +75,7 @@ Default display 2 wiring:
 | SDA | GPIO 10 |
 | SCL | GPIO 11 |
 
-Display 1 stays on the first I2C bus at `0x78` / `0x3C`. Display 2 stays on the second I2C bus at `0x78` / `0x3C`.
-
-Default display settings:
+Default display configuration:
 
 ```c
 #define HUD_OLED_SDA 8
@@ -80,24 +93,44 @@ Default display settings:
 #define HUD_OLED2_RESET -1
 ```
 
-If the screen stays blank, first try address `0x3D`, then verify the board's actual SDA/SCL pins. If a confirmed SSD1306 module shows incorrect output, set `HUD_OLED_DRIVER` to `1306`. Override these values in `esp32-hud/include/config.h`.
+If a screen stays blank, first try address `0x3D`, then verify the board's actual SDA/SCL pins. If a confirmed SSD1306 module shows incorrect output, set `HUD_OLED_DRIVER` to `1306`. Override values in `esp32-hud/include/config.h`.
 
-Physical layout is `[1] [2]`. Display 1 is the speed and safety face. Display 2 is the navigation face: maneuver icon, next maneuver distance, and the selected road name.
+Physical layout is `[1] [2]`:
 
-The firmware renders fixed Korean status labels from 1-bit bitmap glyphs and renders route road names from Android-generated 1-bit road bitmaps. This avoids showing duplicate words such as `우회전`/`좌회전` when the icon already carries the direction.
+| Display | Role |
+| --- | --- |
+| 1 | Speed and safety face |
+| 2 | Maneuver icon, next maneuver distance, selected road name |
 
-## Network
+Fixed Korean status labels are rendered from 1-bit bitmap glyphs. Route road names are rendered by Android into compact 1-bit road bitmaps, so ESP32 does not need to bundle a full Korean font.
 
-After BLE provisioning, the Android bridge sends UDP packets directly to the ESP32 IP address on port `4210`. It uses `255.255.255.255:4210` only while no ESP32 target IP is known.
+## Network Behavior
 
-The app can refresh the ESP32 target by tapping `Wi-Fi 검색`. The app sends UDP discovery probes on port `4211`, listens for ESP32 hello packets, and stores the packet source address as the target host. Probes are sent to `255.255.255.255`, the tablet subnet broadcast address when Android exposes one, and the saved ESP32 target IP when one exists.
+After BLE provisioning, Android sends UDP packets directly to the ESP32 target on port `4210`. Broadcast packets are used only while no ESP32 IP is known.
 
-After BLE provisioning, the app does not immediately search forever. It marks discovery as pending, then runs a 30 second automatic search only after Headunit Revived signals Android Auto projection or the first navigation update. During that search, Android sends a discovery probe immediately and retries once per second until ESP32 responds or the timeout expires. The manual `Find ESP32 on Wi-Fi` button still runs a 12 second search at any time.
+Discovery uses UDP port `4211`:
 
-The foreground bridge service also runs its own recovery loop while Android Auto is active. It starts an 8 second ESP32 discovery attempt only when no ESP32 target is known. If discovery fails, it retries with backoff from 10 seconds up to 60 seconds while Headunit is online and ESP32 is still not connected. When ESP32 is found, the service stores the target, sends current ESP32 settings, and replays the latest active HUD state if one exists.
+- Android sends discovery probes to broadcast targets and any saved ESP32 target.
+- ESP32 replies to probes and periodically broadcasts hello packets.
+- Android stores the packet source address as the target host.
 
-The service does not keep a broadcast fallback after discovery because duplicate UDP paths can let delayed old packets redraw stale HUD values. The intended setup path is still BLE first, Wi-Fi UDP second.
+The foreground bridge service also runs recovery while Android Auto is active. If no ESP32 target is known, it retries discovery with backoff from 10 seconds up to 60 seconds. ESP32 also retries stored Wi-Fi credentials with backoff from 5 seconds up to 60 seconds after boot failures or Wi-Fi loss.
 
-ESP32 also retries its own Wi-Fi connection. If the hotspot is unavailable at boot or the connection drops later, firmware retries the stored SSID with backoff from 5 seconds up to 60 seconds. After reconnect, it restarts the HUD UDP and discovery listeners.
+## Troubleshooting
 
-If a phone hotspot blocks client-to-client traffic, the ESP32 can join the hotspot and show a private IP, but the tablet may still fail to discover it or send UDP packets to it. In that case the network path must change, for example ESP32 AP mode, USB tethering, or a separate travel router.
+| Symptom | Check |
+| --- | --- |
+| BLE provisioning works but Wi-Fi discovery fails | Some phone hotspots block client-to-client traffic. Try ESP32 AP mode, USB tethering, or a separate travel router. |
+| Android target is empty or stale | Tap `Wi-Fi 검색` in the `ESP32 대상` card. |
+| ESP32 has an IP but receives no packets | Confirm tablet and ESP32 are on the same routable network and UDP port `4210` is reachable. |
+| OLED is blank | Check I2C address, SDA/SCL pins, power, and `HUD_OLED_DRIVER`. |
+| Android stops updating in the background | Grant battery optimization exemption through `백그라운드 허용`. |
+
+## Verification Checklist
+
+Run these before opening a pull request or sharing a build:
+
+```powershell
+.\gradlew.bat :bridge-core:test :android-app:testDebugUnitTest :android-app:assembleDebug --warning-mode all
+platformio run -d esp32-hud -e esp32-s3-n16r8
+```
