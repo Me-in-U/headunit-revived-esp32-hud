@@ -81,6 +81,7 @@ Android APK build에는 `ANDROID_HOME` 또는 `local.properties`로 설정된 An
 
 - Setup guide: [English](docs/setup.md) | [한국어](docs/setup.ko.md)
 - Protocol reference: [English](docs/protocol.md) | [한국어](docs/protocol.ko.md)
+- Headunit Revived patch guide: [한국어](docs/headunit-revived-patch.ko.md)
 
 ## 기여
 
