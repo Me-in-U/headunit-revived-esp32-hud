@@ -123,17 +123,19 @@ HUD에 필요한 신호를 분리하려면 같은 조건에서 표준 OBD 값과
 
 ## 구현 우선순위
 
-1. **브리지 앱 OBD reader**: 표준 PID `010D`, `010C`, `0105`, `0142` 또는 `ATRV`부터 안정화한다.
-2. **확장 PID debug mode**: OBDb 후보를 request 단위로 켜고 raw response, decoded value, timeout을 저장한다.
-3. **HUD contract 확장**: 검증된 값만 `vehicle_obd` 같은 별도 packet으로 추가한다.
-4. **Raw CAN logger**: 기어 위치, 방향지시등, cluster 상태처럼 OBD로 안 잡히는 항목만 별도 CAN adapter로 조사한다.
+1. **Pi 로컬 OBD reader**: 표준 PID `010D`, `010C`, `0105`, `0142` 또는 `ATRV`부터 안정화한다.
+2. **Pi 확장 PID debug mode**: OBDb 후보를 request 단위로 켜고 raw response, decoded value, timeout을 저장한다.
+3. **HUD state 확장**: 검증된 값만 `vehicle.*`, `warnings.*`, `dtc.*` 같은 Pi 로컬 상태로 추가한다.
+4. **Pi Raw CAN logger**: 기어 위치, 방향지시등, cluster 상태처럼 OBD로 안 잡히는 항목만 CANable/SocketCAN으로 조사한다.
 5. **DBC 작성**: 실차에서 확정한 frame만 `docs/can/avante_hd_2010.dbc` 같은 별도 파일로 누적한다.
+
+런타임 쪽 확정 CAN 매핑은 차량 profile의 `can_signals` 배열에 넣는다. 실차 로그로 frame ID, byte/bit 위치, scale/offset 또는 value map이 확인된 항목만 `confirmed:true`로 저장하며, Pi SocketCAN source는 이 항목만 decode해서 HUD state에 합친다. Byte 값은 `start_byte` + `length`로, warning lamp나 switch 같은 bit flag는 `start_byte` + `start_bit` + `bit_length`로 정의한다. Bit 번호는 해당 byte의 LSB를 `0`으로 본다. 현재 `avante_hd_2010_1_6_at` profile은 HD 전용 CAN ID가 아직 확정되지 않았으므로 `can_signals: []`가 정상 상태다.
 
 ## 필요한 장비
 
 | 목적 | 장비 | 비고 |
 | --- | --- | --- |
-| 표준/확장 OBD | Vgate iCar Pro 2S, BLE/BT ELM327 | Android bridge 앱에서 구현하기 좋음 |
+| 표준/확장 OBD | Vgate iCar Pro 2S, BLE/BT ELM327 | Pi HUD 런타임에서 직접 읽는 1차 입력 |
 | passive CAN sniff | CANable, CANtact, USBtin, CANedge, comma panda | listen-only 지원 중요 |
 | Pi 기반 HUD와 같이 로깅 | Raspberry Pi + USB-CAN + SavvyCAN/can-utils | HDMI bar LCD HUD와 궁합 좋음 |
 | 안전 확인 | multimeter | CAN pair 저항/전압 확인 |

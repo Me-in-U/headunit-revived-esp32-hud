@@ -16,6 +16,18 @@ esp32-hud/.pio/
 esp32-hud/.vscode/
 esp32-hud/include/config.h
 
+# Python / PyInstaller
+__pycache__/
+*.py[cod]
+.venv/
+pi-hud/.venv/
+layout-editor-electron/node_modules/
+layout-editor-electron/dist/
+layout-editor-electron/electron-screenshot.png
+layout-editor-electron/layout-preview-verify.png
+vehicle-baseline/
+field-pack/
+
 # OS
 Thumbs.db
 .DS_Store

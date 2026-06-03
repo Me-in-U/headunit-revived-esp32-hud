@@ -1,47 +1,47 @@
-# Headunit Revived ESP32 HUD Project
+# Headunit Revived HUD Project
 
 ## Project Goal
 
-Build a separate companion system for Headunit Revived that forwards Android Auto navigation guidance from an Android tablet to an ESP32-based HUD.
+Build a companion HUD system for Headunit Revived without forking Headunit Revived.
 
-Headunit Revived itself is treated as an upstream dependency. Do not modify or fork Headunit Revived for this project unless the user explicitly asks for that. The Android app in this repository receives Headunit Revived navigation broadcasts and bridges them to ESP32 over the local network.
+The current primary target is a Raspberry Pi 4B driving a 1920x480 HDMI auxiliary display. The Pi must be able to run standalone: it reads vehicle data locally through iCar/ELM327 OBD and CANable/SocketCAN, renders the HUD locally, and treats the Android bridge as an optional navigation input only. When the Android bridge is on the same network, it sends Headunit Revived navigation plus tablet/GPS backup speed to the Pi.
+
+The older ESP32 OLED HUD path remains in the repository and should continue to work unless the user explicitly asks to remove or replace it.
 
 ## Runtime Assumptions
 
 - The tablet runs the GitHub build of Headunit Revived from `C:\Users\Zoe_Lowell\Documents\GitHub\headunit-revived`.
 - The active Headunit Revived build emits `com.andrerinas.headunitrevived.NAVIGATION_UPDATE` broadcasts without signature-only receiver restrictions.
-- The phone provides a Wi-Fi hotspot/tethering network.
-- The tablet and ESP32 both ultimately connect to that phone hotspot.
-- ESP32 first exposes a BLE provisioning service named `Headunit HUD`.
-- The Android bridge app sends the hotspot SSID/password to ESP32 over BLE.
-- After ESP32 joins Wi-Fi, it sends a compact BLE status notification, advertises itself on UDP discovery port `4211`, and receives HUD UDP packets from the tablet on port `4210`.
-- Android should automatically start UDP discovery after BLE credential write or connected status, because BLE status notifications may be compact and may not contain the ESP32 IP address.
-- The Android foreground bridge service should keep recovering without the setup screen: retry ESP32 discovery with bounded backoff after failures, but do not delay HUD sends on ESP32 ACKs.
-- ESP32 should retry stored Wi-Fi credentials with bounded backoff after boot-time connection failure or later Wi-Fi loss, then restart UDP listeners after reconnect.
-- Some phone hotspots isolate clients even when both clients have private hotspot IP addresses. In that case BLE provisioning can succeed but Wi-Fi discovery and HUD UDP packets can still fail.
+- Raspberry Pi 4B is the main 1920x480 HUD computer.
+- Pi local vehicle input is iCar/ELM327 for standard OBD PIDs and CANable with candleLight/SocketCAN for raw CAN.
+- Android bridge is optional for the Pi path. If Android is absent or unreachable, the Pi HUD still renders local vehicle data and marks navigation stale/disconnected.
+- Android bridge packets to a Pi target must be limited to navigation and `type=speed` backup speed. ESP32-only settings packets must not be sent to Pi targets.
+- Phone hotspot/tethering may be used as the shared network for Android and Pi. Some hotspots isolate clients; in that case Pi local vehicle data still works but Android navigation UDP may not reach the Pi.
+- ESP32 still uses BLE provisioning, UDP discovery, UDP HUD packets, and OLED rendering for the legacy compact HUD path.
 
 ## Repository Layout
 
 - `android-app/`: Kotlin Android bridge app.
   - Receives Headunit Revived navigation broadcasts.
-  - Provisions ESP32 over BLE with hotspot Wi-Fi credentials.
-  - Discovers a provisioned ESP32 on the hotspot using UDP discovery.
-  - Retries ESP32 discovery from the foreground service while Android Auto is active.
-  - Requests Android battery-optimization exemption and keeps the setup screen awake while visible.
-  - Converts broadcast extras into stable HUD packet data.
-  - Sends UDP packets to the provisioned ESP32 IP, using broadcast only while no ESP32 IP is known.
-  - Sends ESP32 settings packets for OLED debug-overlay visibility, speed-unit visibility, and speed font size.
-- `esp32-hud/`: PlatformIO ESP32-S3 firmware.
-  - Targets an ESP32-S3-N16R8 style board through the `esp32-s3-n16r8` PlatformIO environment.
-  - Advertises the BLE provisioning service.
-  - Stores received Wi-Fi credentials in ESP32 NVS.
-  - Connects to Wi-Fi in STA mode.
-  - Retries stored Wi-Fi credentials with bounded backoff when the hotspot is unavailable or disconnects.
-  - Responds to UDP discovery probes and periodically broadcasts discovery hello packets.
-  - Listens for UDP HUD packets.
-  - Accepts UDP settings packets to hide/show OLED debug header and footer.
-  - Renders navigation state on a 128x64 I2C OLED and also prints parsed state over serial.
-- `docs/`: Protocol notes, setup instructions, and verification steps.
+  - Sends navigation packets and tablet/GPS backup speed over UDP.
+  - Discovers ESP32 and Raspberry Pi HUD targets using UDP discovery.
+  - Stores target kind so Pi targets do not receive ESP32 settings packets.
+  - Keeps ESP32 BLE provisioning/settings support for the legacy OLED path.
+- `bridge-core/`: Pure Kotlin packet, timing, state, and discovery contract code with unit tests.
+- `pi-hud/`: Raspberry Pi 1920x480 pygame HUD runtime.
+  - Loads the same layout JSON that the Windows editor saves.
+  - Reads OBD via ELM327/iCar serial or rfcomm.
+  - Reads CAN via CANable/SocketCAN.
+  - Responds to Android bridge discovery with `device_kind=pi_hud`.
+  - Receives Android navigation and backup speed on UDP port `4210`.
+  - Ignores stale sequenced UDP packets.
+- `layout-editor-electron/`: primary Windows Electron layout editor.
+  - Shows the actual Pi `HudRenderer` output in the central preview through the Python bridge.
+  - Keeps JSON, snapshot export, validation, and field-pack export compatible with the Pi runtime.
+- `layouts/`: Shared 1920x480 HUD layout JSON files.
+- `vehicles/`: Vehicle profile JSON files for future vehicle expansion.
+- `esp32-hud/`: PlatformIO ESP32-S3 firmware for the legacy dual-OLED HUD.
+- `docs/`: Protocol notes, setup guides, Pi runtime guide, vehicle research, and verification steps.
 
 ## Headunit Broadcast Contract
 
@@ -66,11 +66,51 @@ Important extras:
 - `turn_detail_age_ms`: age of the latest turn-detail snapshot, `-1` if unknown.
 - `turn_distance_age_ms`: age of the latest turn-distance snapshot, `-1` if unknown.
 
-Every Android-to-ESP32 UDP payload includes a monotonic `seq` field. ESP32 must ignore a sequenced packet when `seq` is less than or equal to the last accepted sequence so delayed UDP packets cannot redraw stale HUD values.
+Every Android-to-HUD UDP payload includes a monotonic `seq` field. ESP32 and Raspberry Pi HUD receivers ignore sequenced packets when `seq` is less than or equal to the last accepted sequence so delayed UDP packets cannot redraw stale HUD values.
 
 The bridge must not rely only on `action_text` for direction. Korean strings such as `회전` can omit left/right direction, so direction must be derived from `turn_side` and event fields.
 
-## BLE Provisioning Contract
+## UDP HUD Packet Contract
+
+Default transport is UDP to port `4210`.
+
+Android sends HUD packets fire-and-forget. HUD receivers do not ACK live packets, so stale return traffic cannot delay current navigation guidance.
+
+Android retransmits the latest tablet/GPS speed packet once per second. On Raspberry Pi targets this is backup speed only; local OBD/CAN remains the primary vehicle source.
+
+The wire format is one compact UTF-8 JSON object per packet:
+
+```json
+{"seq":123456,"distance_meters":300,"time_seconds":25,"road":"강남대로","event_type":4,"turn_side":2,"instruction":"300m 후 우회전"}
+```
+
+Keep packets backward compatible when adding fields. Receivers should ignore unknown fields.
+
+## Discovery Contract
+
+Discovery uses UDP port `4211`.
+
+Android sends this probe:
+
+```json
+{"type":"headunit_hud_discover"}
+```
+
+ESP32 responds with the legacy hello:
+
+```json
+{"type":"headunit_hud_hello","name":"Headunit HUD","ip":"192.168.43.23","udp_port":4210}
+```
+
+Raspberry Pi responds with the same hello type and identifies itself as a Pi HUD:
+
+```json
+{"type":"headunit_hud_hello","name":"Headunit Pi HUD","ip":"192.168.43.20","udp_port":4210,"device_kind":"pi_hud"}
+```
+
+Android must prefer the UDP packet source address over the JSON `ip` field because the source address is the routable address observed by the tablet. Missing `device_kind` means legacy ESP32 target. `device_kind=pi_hud` means Android stores a Pi target and sends navigation plus backup speed only.
+
+## ESP32 Provisioning And Settings
 
 The ESP32 advertises:
 
@@ -85,78 +125,39 @@ Credential writes are UTF-8 JSON:
 {"ssid":"PhoneHotspot","password":"hotspot-password","udp_port":4210}
 ```
 
-Status notifications are UTF-8 JSON:
-
-```json
-{"s":"c"}
-```
-
-The bridge still accepts older verbose status JSON, but the firmware should prefer compact status JSON so BLE notifications do not get truncated by small MTU links.
-
-## HUD Packet Contract
-
-Default transport is UDP to port `4210`.
-
-ESP32 does not ACK HUD UDP packets. Android sends HUD packets fire-and-forget so stale return traffic cannot delay current navigation guidance.
-
-Android retransmits the latest speed packet once per second. Location callbacks may arrive faster or slower than that depending on Android/GPS behavior.
-
-Android may include `road_bitmap_width`, `road_bitmap_height`, and `road_bitmap_hex` so ESP32 can draw arbitrary Hangul road names without bundling a full Korean font.
-
-The initial wire format is one compact UTF-8 JSON object per packet:
-
-```json
-{"distance_meters":300,"time_seconds":25,"road":"강남대로","road_bitmap_width":76,"road_bitmap_height":16,"road_bitmap_hex":"...","event_type":4,"turn_side":2,"instruction":"300m 후 우회전"}
-```
-
-Keep the packet backward compatible when adding fields. ESP32 firmware should ignore unknown fields.
-
-## ESP32 Settings Packet Contract
-
-Settings use the same HUD UDP port `4210`.
+ESP32 settings use the same HUD UDP port `4210` and must only be sent to ESP32 targets:
 
 ```json
 {"type":"settings","debug_overlay":false,"speed_unit_visible":true,"speed_font_size":4,"language":"ko"}
 ```
 
-When `debug_overlay` is `false`, ESP32 hides the OLED top `NAV/IP` header and bottom road/debug line and expands the main maneuver layout. `speed_font_size` is clamped to `2..6`. `language` accepts `ko` or `en` and controls fixed ESP32 OLED HUD labels; Android uses the same saved value for the app UI. These settings are stored in ESP32 NVS.
-
-## ESP32 Discovery Contract
-
-Discovery uses UDP port `4211`.
-
-Android sends this probe:
-
-```json
-{"type":"headunit_hud_discover"}
-```
-
-ESP32 responds directly to the probe sender and periodically broadcasts this hello:
-
-```json
-{"type":"headunit_hud_hello","name":"Headunit HUD","ip":"192.168.43.23","udp_port":4210}
-```
-
-Android must prefer the UDP packet source address over the JSON `ip` field because the source address is the routable address observed by the tablet.
+Raspberry Pi HUD targets manage layout/settings locally through JSON layout files and the Electron Windows editor.
 
 ## Engineering Rules
 
 - Keep Headunit Revived integration isolated behind constants and parsing helpers.
-- Prefer simple, testable pure Kotlin for packet formatting and maneuver mapping.
+- Prefer simple, testable pure Kotlin for Android packet formatting and maneuver mapping.
 - Keep Android service/network code separate from packet formatting.
-- Do not commit Wi-Fi SSIDs, passwords, IP addresses, signing keys, or local Android SDK paths.
+- Keep Pi runtime data sources (`OBD`, `CAN`, `bridge`, `dummy`) separated so each can be tested independently.
+- Keep layout JSON as the shared contract between `layout-editor-electron/` and `pi-hud/`; renderer-visible changes need tests or layout verification.
+- Keep vehicle-specific confirmed facts in `vehicles/*.json`, default layout `vehicles`, and vehicle docs synchronized.
+- Android must not send ESP32 settings packets to Pi targets.
+- Do not commit Wi-Fi SSIDs, passwords, IP addresses, signing keys, local Android SDK paths, generated baseline captures, or device-specific private data.
 - Keep ESP32 display-driver code behind a small function boundary so the transport path can be tested with serial output first.
-- Current OLED layout is physical `[1] [2]`: display 1 speed/safety on GPIO 8/9 at `0x3C`, and display 2 navigation on GPIO 10/11 at `0x3C`; keep these overrideable through `config.h`.
-- Keep BLE UUIDs, discovery constants, settings fields, and packet fields synchronized between `BleProvisioningContract.kt`, `Esp32DiscoveryPacket.kt`, `Esp32SettingsPacket.kt`, `ProvisioningStore.kt`, `esp32-hud/src/main.cpp`, and `docs/protocol.md`.
-- Update `docs/protocol.md` when the UDP schema changes.
+- Keep BLE UUIDs, discovery constants, settings fields, and packet fields synchronized between Kotlin code, Pi discovery/runtime code, ESP32 firmware where applicable, and `docs/protocol.md`.
+- Update `docs/protocol.md` and `docs/protocol.ko.md` when the UDP schema changes.
 - Use Korean user-facing wording where appropriate, but keep code identifiers and protocol fields in English.
 
 ## Verification
 
 Preferred checks:
 
-- Android unit tests: `gradle :android-app:testDebugUnitTest`
-- Android lint/build, once SDK dependencies are available: `gradle :android-app:assembleDebug`
-- ESP32 compile, once PlatformIO is installed: `platformio run -d esp32-hud -e esp32-s3-n16r8`
+- Pi runtime tests on Windows from repo root: `$env:PYTHONPATH=(Resolve-Path 'pi-hud').Path; .\pi-hud\.venv\Scripts\python.exe -m unittest discover -s pi-hud\tests`.
+- Electron layout editor checks from `layout-editor-electron/`: `npm test`, `npm audit --audit-level=high`, `npm run build`.
+- Pi/Linux runtime tests from `pi-hud/`: `.venv/bin/python -m unittest discover -s tests`.
+- Layout render check: `python pi-hud/scripts/verify-layout.py layouts/avante_hd_2010_default.json --width 1920 --height 480 --output <png>`.
+- Android unit tests: `gradle :bridge-core:test :android-app:testDebugUnitTest`.
+- Android build: `gradle :android-app:assembleDebug`.
+- ESP32 compile, once PlatformIO is installed: `platformio run -d esp32-hud -e esp32-s3-n16r8`.
 
 If a tool is missing locally, state that clearly and verify the parts that can run.

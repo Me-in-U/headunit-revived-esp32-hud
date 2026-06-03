@@ -4,7 +4,7 @@
 
 이 문서는 Avante HD / Hyundai Elantra HD 세대에서 HUD용 OBD 데이터를 읽기 위한 PID 후보를 정리한다.
 
-목표는 브리지 앱이 Android 태블릿에서 OBD 동글을 읽고, 검증된 값만 ESP32 HUD UDP packet에 추가하는 것이다. ESP32가 OBD 동글에 직접 연결하는 구조는 기본 설계가 아니다.
+목표는 Raspberry Pi HUD 런타임이 iCar/ELM327 OBD 입력을 직접 읽고, 검증된 값만 1920x480 HUD 레이아웃에 표시하는 것이다. Android 브릿지는 내비게이션 정보와 GPS backup speed만 보내며, OBD 값의 주 입력 경로가 아니다.
 
 ## 분류 기준
 
@@ -12,7 +12,7 @@
 - **확장 PID(확실)**: 공개 Hyundai Elantra OBDb signalset에 command/header/신호 정의가 있고, Avante HD 서비스 매뉴얼의 센서 구성과 맞는 항목. 그래도 실차에서 raw response와 값 범위를 검증한 뒤 HUD에 표시한다.
 - **확장 PID(불확실)**: 차량 내부 데이터 또는 앱 플러그인 기능은 확인되지만, Avante HD에서 쓸 exact header/mode/PID/formula가 공개 자료만으로 확정되지 않은 항목.
 
-브리지 앱은 모든 항목을 hardcode-visible로 켜지 말고, 먼저 지원 여부와 sane range를 확인해야 한다.
+Pi HUD 런타임은 모든 항목을 hardcode-visible로 켜지 말고, 먼저 지원 여부와 sane range를 확인해야 한다.
 
 ## 2010년식 자동 조건
 
@@ -134,7 +134,7 @@ wheel speed와 brake pressure는 HUD 표시보다 진단/로그 가치가 높다
 
 ## 확장 PID(불확실)
 
-아래 항목은 차량 내부 데이터 또는 앱 플러그인 기능은 확인되지만, Avante HD에서 브리지 앱에 바로 넣을 exact command가 아직 불확실하다.
+아래 항목은 차량 내부 데이터 또는 앱 플러그인 기능은 확인되지만, Avante HD에서 Pi HUD 런타임에 바로 넣을 exact command가 아직 불확실하다.
 
 | 항목 | 상태 | 조사 근거 | 다음 검증 |
 | --- | --- | --- | --- |
@@ -165,7 +165,7 @@ A4CF2 기준 기어비:
 
 추정 기어는 토크컨버터 슬립, 저속, 변속 중, 락업 전 상태에서 틀릴 수 있으므로 HUD에는 `추정` 상태로만 표시한다.
 
-## 브리지 앱 구현 순서
+## Pi HUD 구현 순서
 
 1. 표준 PID scanner를 먼저 만든다: `0100`, `0120`, `0140`으로 지원 목록을 만들고, 지원되는 표준 PID만 polling한다.
 2. HUD 1차 값은 `010D`, `010C`, `0105`, `0142` 또는 `ATRV`로 제한한다.
@@ -173,6 +173,8 @@ A4CF2 기준 기어비:
 4. 같은 값을 표준 PID와 확장 PID가 모두 제공하면 표준 PID를 우선하고, 확장 PID는 비교 로그로만 둔다.
 5. ATF temperature/current gear는 앱 플러그인 또는 전문 진단기에서 실제 표시를 확인하기 전까지 HUD contract에 넣지 않는다.
 6. 확장 PID 하나가 응답하지 않아도 OBD polling loop 전체를 막지 않는다. timeout, no data, invalid response는 field 단위로 격리한다.
+
+현재 Pi baseline collector는 기본 표준 PID/DTC 명령 뒤에 차량 profile의 `obd_probe_commands`를 자동으로 추가한다. `avante_hd_2010_1_6_at` profile에는 위 Engine ECU, ABS/ESP, Cluster 후보가 들어 있으며 모두 `confirmed:false`다. 이 값은 실차 응답 수집용이지 HUD 표시 확정값이 아니다.
 
 ## 실차 검증 체크리스트
 

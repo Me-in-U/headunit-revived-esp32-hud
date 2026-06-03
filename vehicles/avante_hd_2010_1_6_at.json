@@ -1,0 +1,62 @@
+{
+  "id": "avante_hd_2010_1_6_at",
+  "label": "2010 Avante HD 1.6 Gasoline AT",
+  "description_ko": "2010 아반떼 HD 1.6 가솔린 자동",
+  "confirmed": {
+    "abs": true,
+    "esc_tcs": null,
+    "tpms": false,
+    "gear_range_display": "P/R/N/D/3/2/L",
+    "dlc_pins": [16, 15, 14, 12, 8, 6, 5, 4, 3],
+    "warning_lamps": [
+      "door_open",
+      "battery",
+      "brake",
+      "abs",
+      "airbag",
+      "oil_pressure",
+      "check_engine",
+      "eps",
+      "coolant_temp"
+    ]
+  },
+  "can_signals": [],
+  "obd_probe_commands": [
+    {
+      "label": "Engine ECU extended current data 21 01",
+      "description_ko": "엔진 ECU 확장 현재값 후보: 전압, RPM, 냉각수온, 흡기온 등",
+      "confirmed": false,
+      "commands": ["ATSH7E0", "ATCRA7E8", "2101"]
+    },
+    {
+      "label": "Engine ECU extended current data 21 02",
+      "description_ko": "엔진 ECU 확장 현재값 후보: 차량 속도 보조값, O2, 분사 시기 등",
+      "confirmed": false,
+      "commands": ["ATSH7E0", "ATCRA7E8", "2102"]
+    },
+    {
+      "label": "Engine ECU pedal and torque 21 14",
+      "description_ko": "엔진 ECU 확장 후보: 페달, 스로틀, 팬 PWM, 요청 토크",
+      "confirmed": false,
+      "commands": ["ATSH7E0", "ATCRA7E8", "2114"]
+    },
+    {
+      "label": "ABS wheel speed 21 01",
+      "description_ko": "ABS/ESP 확장 후보: 휠 속도",
+      "confirmed": false,
+      "commands": ["ATSH7D1", "ATCRA7D9", "2101"]
+    },
+    {
+      "label": "ABS brake and steering 22 0104",
+      "description_ko": "ABS/ESP 확장 후보: 평균 속도, 휠 속도, 브레이크 압력, 조향각",
+      "confirmed": false,
+      "commands": ["ATSH7D1", "ATCRA7D9", "220104"]
+    },
+    {
+      "label": "Cluster fuel and odometer 22 B002",
+      "description_ko": "계기판 확장 후보: 연료량, 계기판 전압, 주행거리",
+      "confirmed": false,
+      "commands": ["ATSH7C6", "ATCRA7CE", "22B002"]
+    }
+  ]
+}

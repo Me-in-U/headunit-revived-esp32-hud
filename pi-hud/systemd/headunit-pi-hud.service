@@ -1,0 +1,21 @@
+[Unit]
+Description=Headunit Raspberry Pi HUD
+After=network-online.target bluetooth.target
+Wants=network-online.target bluetooth.target
+
+[Service]
+Type=simple
+User=pi
+WorkingDirectory=/opt/headunit-pi-hud
+EnvironmentFile=-/etc/headunit-pi-hud.env
+Environment=PYGAME_HIDE_SUPPORT_PROMPT=1
+Environment=SDL_AUDIODRIVER=dummy
+ExecStartPre=-+/opt/headunit-pi-hud/pi-hud/scripts/setup-obd-from-env.sh
+ExecStartPre=-+/opt/headunit-pi-hud/pi-hud/scripts/setup-canable-from-env.sh
+ExecStart=/opt/headunit-pi-hud/pi-hud/scripts/run-from-env.sh
+Restart=always
+RestartSec=3
+SupplementaryGroups=dialout video render input bluetooth
+
+[Install]
+WantedBy=multi-user.target

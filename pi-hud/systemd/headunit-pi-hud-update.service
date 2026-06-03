@@ -1,0 +1,10 @@
+[Unit]
+Description=Update Headunit Raspberry Pi HUD from git
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+WorkingDirectory=/opt/headunit-pi-hud
+EnvironmentFile=-/etc/headunit-pi-hud.env
+ExecStart=/opt/headunit-pi-hud/pi-hud/scripts/update-from-git.sh
