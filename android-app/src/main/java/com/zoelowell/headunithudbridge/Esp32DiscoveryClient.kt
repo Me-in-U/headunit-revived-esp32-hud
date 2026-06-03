@@ -19,7 +19,7 @@ class Esp32DiscoveryClient(
 ) {
     interface Listener {
         fun onDiscoveryMessage(message: String)
-        fun onEsp32Discovered(host: String, port: Int)
+        fun onEsp32Discovered(host: String, port: Int, targetKind: HudTargetKind)
         fun onEsp32DiscoveryFailed(message: String)
     }
 
@@ -74,7 +74,7 @@ class Esp32DiscoveryClient(
 
                     val result = parseBeacon(packet)
                     if (result != null) {
-                        listener.onEsp32Discovered(result.host, result.port)
+                        listener.onEsp32Discovered(result.host, result.port, result.targetKind)
                         return
                     }
                 }
@@ -170,12 +170,17 @@ class Esp32DiscoveryClient(
             Esp32DiscoveryPacket.FIELD_UDP_PORT,
             BleProvisioningContract.DEFAULT_UDP_PORT
         )
-        return DiscoveryResult(host, port)
+        val targetKind = Esp32DiscoveryPacket.targetKindFromHello(
+            name = json.optString(Esp32DiscoveryPacket.FIELD_NAME),
+            deviceKind = json.optString(Esp32DiscoveryPacket.FIELD_DEVICE_KIND)
+        )
+        return DiscoveryResult(host, port, targetKind)
     }
 
     private data class DiscoveryResult(
         val host: String,
-        val port: Int
+        val port: Int,
+        val targetKind: HudTargetKind
     )
 
     companion object {

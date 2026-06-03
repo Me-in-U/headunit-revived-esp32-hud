@@ -12,14 +12,7 @@ data class HudNavigationPacket(
     val iconBitmap: HudTextBitmap? = null
 ) {
     val instruction: String
-        get() {
-            val action = actionText()
-            return if (distanceMeters >= 0) {
-                "${distanceMeters}m 후 $action"
-            } else {
-                action
-            }
-        }
+        get() = actionText()
 
     val activeGuidance: Boolean
         get() = eventType != HeadunitNavEvent.UNKNOWN ||

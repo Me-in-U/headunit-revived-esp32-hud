@@ -2,7 +2,7 @@
 
 [English](protocol.md) | [한국어](protocol.ko.md) | [프로젝트 README](../README.ko.md)
 
-이 문서는 Headunit Revived, Android bridge app, ESP32 HUD firmware 사이의 현재 wire contract를 설명합니다.
+이 문서는 Headunit Revived, Android bridge app, ESP32 HUD firmware, Raspberry Pi HUD runtime 사이의 현재 wire contract를 설명합니다.
 
 Protocol은 작고 additive하게 유지합니다. 새 JSON field는 시간이 지나며 추가될 수 있고, receiver는 알 수 없는 field를 무시해야 합니다.
 
@@ -11,6 +11,7 @@ Protocol은 작고 additive하게 유지합니다. 새 JSON field는 시간이 �
 - 공개된 field name은 안정적으로 유지합니다.
 - rename/remove 대신 field를 추가합니다.
 - optional field가 없으면 unknown value로 처리합니다.
+- 알 수 없는 JSON field는 additive field로 보고 무시하지만, 알 수 없는 `type` 값을 navigation packet으로 취급하지 않습니다.
 - HUD behavior는 numeric state field를 우선 사용하고, localized string은 display text로만 사용합니다.
 - `docs/protocol.md`, Android packet code, ESP32 packet parsing을 함께 동기화합니다.
 
@@ -71,12 +72,12 @@ Bridge는 UDP datagram 하나당 JSON object 하나를 port `4210`으로 보냅�
 
 ESP32 target IP를 알고 있으면 Android는 저장된 IP로만 보냅니다. Target을 모르면 `255.255.255.255:4210`으로 보냅니다.
 
-각 payload에는 monotonic `seq` field가 포함됩니다. ESP32는 `seq`가 마지막으로 accepted packet 이하인 sequenced packet을 무시해서 delayed UDP packet이 stale HUD 값을 다시 그리지 못하게 합니다.
+각 payload에는 monotonic `seq` field가 포함됩니다. ESP32와 Raspberry Pi HUD receiver는 `seq`가 마지막으로 accepted packet 이하인 sequenced packet을 무시해서 delayed UDP packet이 stale HUD 값을 다시 그리지 못하게 합니다.
 
 Example:
 
 ```json
-{"seq":123456,"distance_meters":300,"time_seconds":25,"road":"강남대로","road_bitmap_width":76,"road_bitmap_height":16,"road_bitmap_hex":"...","event_type":4,"turn_side":2,"turn_number":-1,"turn_angle":-1,"active":true,"instruction":"300m 후 우회전"}
+{"seq":123456,"distance_meters":300,"time_seconds":25,"road":"강남대로","road_bitmap_width":76,"road_bitmap_height":16,"road_bitmap_hex":"...","event_type":4,"turn_side":2,"turn_number":-1,"turn_angle":-1,"active":true,"instruction":"우회전"}
 ```
 
 | Field | Type | Required | Meaning |
@@ -90,7 +91,7 @@ Example:
 | `turn_number` | int | yes | Roundabout/exit number, 또는 `-1` |
 | `turn_angle` | int | yes | Turn angle, 또는 `-1` |
 | `active` | bool | yes | Active route guidance 여부 |
-| `instruction` | string | no | App/debug surface용 human-readable instruction |
+| `instruction` | string | no | App/debug surface용 human-readable maneuver text. 거리 값은 중복 표시를 막기 위해 `distance_meters`에만 둡니다. |
 | `road_bitmap_width` | int | no | Android-generated road bitmap width |
 | `road_bitmap_height` | int | no | Android-generated road bitmap height |
 | `road_bitmap_hex` | string | no | Row-major packed 1-bit bitmap data |
@@ -98,7 +99,7 @@ Example:
 | `icon_bitmap_height` | int | no | Android-generated icon bitmap height |
 | `icon_bitmap_hex` | string | no | Row-major packed 1-bit icon bitmap data |
 
-`active=false`이면 ESP32는 `--`나 `안내` 같은 placeholder 대신 navigation face를 clear합니다.
+`active=false`이면 ESP32는 `--`나 `안내` 같은 placeholder 대신 navigation face를 clear합니다. Raspberry Pi HUD runtime은 이 packet을 `nav.connected=false`로 반영하고 road/instruction text를 비우며 numeric guidance field를 `--`로 바꿔서 이전 경로 안내가 화면에 남지 않게 합니다.
 
 Bridge는 explicit inactive packet 또는 bridge service shutdown에서만 active guidance를 clear합니다. Android Auto가 active이지만 route guidance가 없는 상태에서는 waiting placeholder를 보내지 않습니다.
 
@@ -141,7 +142,7 @@ Android app은 compact JSON과 older verbose JSON을 모두 받습니다. Firmwa
 
 ## Wi-Fi Discovery
 
-Discovery는 UDP port `4211`을 사용합니다. BLE provisioning은 성공했지만 Android가 ESP32 target address를 refresh/recover해야 하는 경우를 위한 경로입니다.
+Discovery는 UDP port `4211`을 사용합니다. BLE provisioning은 성공했지만 Android가 HUD target address를 refresh/recover해야 하는 경우를 위한 경로입니다. Raspberry Pi HUD runtime도 같은 discovery contract에 응답하므로, 같은 네트워크에 있으면 Android가 ESP32 없이도 내비와 backup speed를 Pi로 보낼 수 있습니다.
 
 Android가 보내는 UTF-8 JSON probe:
 
@@ -161,11 +162,19 @@ ESP32는 probe sender에 응답하고 hello를 주기적으로 broadcast합니�
 {"type":"headunit_hud_hello","name":"Headunit HUD","ip":"192.168.43.23","udp_port":4210}
 ```
 
+Raspberry Pi HUD는 같은 hello type으로 응답하되 `device_kind=pi_hud`로 자신을 식별합니다.
+
+```json
+{"type":"headunit_hud_hello","name":"Headunit Pi HUD","ip":"192.168.43.20","udp_port":4210,"device_kind":"pi_hud"}
+```
+
 Android는 JSON `ip` field보다 UDP packet source address를 먼저 저장합니다. JSON IP는 fallback/debug data입니다.
+
+`device_kind`가 없으면 Android는 legacy ESP32 HUD target으로 취급합니다. `device_kind=pi_hud`이거나 hello name이 Pi HUD임을 명확히 나타내면 Android는 target을 Pi HUD로 저장하고 ESP32 전용 settings packet을 보내지 않습니다. Navigation packet과 `type=speed` backup speed packet은 계속 보냅니다.
 
 Automatic discovery는 Android Auto activity에 의해 gate됩니다. BLE provisioning은 discovery pending만 표시하고, Android는 Headunit Revived projection request broadcast 또는 첫 navigation update broadcast를 받은 뒤 30초 automatic Wi-Fi search를 시작합니다. Manual discovery는 app UI에서 항상 가능하며 12초 search window를 사용합니다. Search 중에는 첫 probe를 즉시 보내고 1초마다 retry합니다.
 
-Foreground bridge service에는 setup screen과 독립적인 recovery path가 있습니다. Android Auto projection 또는 navigation이 관측되면 service는 saved target이 있을 때 그 target으로 HUD packet을 보내고, 없으면 broadcast로 보냅니다. ESP32 target이 없을 때만 8초 discovery attempt를 실행합니다. 실패한 attempt는 Headunit online이고 ESP32가 connected가 아닐 때 10초에서 60초까지 exponential backoff로 retry합니다. Discovery가 성공하면 backoff를 reset하고 target host를 저장하며, current ESP32 settings packet과 최신 active HUD state를 다시 보냅니다.
+Foreground bridge service에는 setup screen과 독립적인 recovery path가 있습니다. Android Auto projection 또는 navigation이 관측되면 service는 saved target이 있을 때 그 target으로 HUD packet을 보내고, 없으면 broadcast로 보냅니다. Target이 없을 때만 8초 discovery attempt를 실행합니다. 실패한 attempt는 Headunit online이고 HUD target이 connected가 아닐 때 10초에서 60초까지 exponential backoff로 retry합니다. Discovery가 성공하면 backoff를 reset하고 target host를 저장하며, ESP32 target일 때만 current ESP32 settings packet을 보내고 최신 active HUD state를 다시 보냅니다.
 
 ## Wi-Fi Reconnect
 
@@ -175,7 +184,7 @@ Reconnect 시 ESP32는 HUD UDP listener `4210`과 discovery listener `4211`을 �
 
 ## ESP32 Settings Packet
 
-Android는 settings packet을 HUD UDP port `4210`으로 보냅니다.
+Android는 ESP32 target에만 settings packet을 HUD UDP port `4210`으로 보냅니다. Raspberry Pi HUD target은 layout/settings를 로컬에서 관리하므로 navigation과 backup speed만 받아야 합니다.
 
 ```json
 {"type":"settings","debug_overlay":false,"speed_unit_visible":true,"speed_font_size":4,"language":"ko"}
@@ -200,6 +209,33 @@ Android는 최신 tablet GPS speed packet을 저장하고 1초마다 retransmit�
 ```
 
 Android에 current speed value가 없으면 HUD가 `--` 대신 stationary speed를 표시하도록 `speed_kmh=0`을 보냅니다. Android는 500ms 간격 location update를 요청하지만 callback timing은 OS/GPS behavior에 따라 달라질 수 있습니다. 1초 speed replay가 HUD speed face refresh를 유지합니다.
+
+Raspberry Pi HUD는 이 packet을 `vehicle.speed_kmh_backup`으로만 저장합니다. 로컬 OBD/CAN 값이 차량 주 데이터 source입니다.
+Pi runtime은 navigation freshness와 backup speed freshness를 따로 추적하므로, Android speed packet이 계속 들어와도 오래된 길안내를 connected 상태로 유지하지 않습니다.
+
+## Raspberry Pi Diagnostic Packets
+
+실사용 Pi HUD 경로는 iCar/ELM327와 CANable/SocketCAN에서 차량 데이터를 로컬로 읽습니다. Android bridge는 navigation과 backup speed만 보내야 합니다.
+
+Pi runtime은 remote `vehicle_status` packet을 의도적으로 무시합니다. 따라서 UDP traffic이 Pi 로컬 OBD/CAN 주 차량값을 대체할 수 없습니다. Android bridge target policy는 명시적으로 나뉩니다. ESP32 target은 navigation, backup speed, ESP32 settings packet을 받을 수 있지만 Raspberry Pi HUD target은 navigation과 `type=speed` backup-speed packet만 받을 수 있습니다. Android는 production HUD target으로 `vehicle_status`, `dtc_snapshot`, `vehicle_debug` packet을 보내면 안 됩니다.
+
+Debug-only packet은 Pi runtime 기본값에서는 무시합니다. Layout debugging과 실차 CAN/OBD 조사 때만 Pi runtime을 `--allow-diagnostic-udp`로 실행하면 같은 UDP port `4210`에서 받을 수 있습니다.
+
+DTC snapshot:
+
+```json
+{"type":"dtc_snapshot","seq":124,"stored":["P0133"],"pending":[],"permanent":[]}
+```
+
+Pi runtime은 이 값을 `dtc.stored`, `dtc.pending`, `dtc.permanent`에 반영하고 `dtc.count`는 stored plus pending count로 다시 계산합니다.
+
+Vehicle debug:
+
+```json
+{"type":"vehicle_debug","seq":125,"can_frame_count":128,"last_can_id":"0x316","obd_request":"010C","obd_response":"7E8 04 41 0C 1A F8"}
+```
+
+이 field들은 모두 optional이며 `debug.*` 아래에 들어갑니다. Android navigation bridge용이 아니라 layout debugging과 실차 CAN/OBD 조사용입니다.
 
 ## Dual OLED Layout
 

@@ -2,7 +2,7 @@
 
 [English](protocol.md) | [한국어](protocol.ko.md) | [Project README](../README.md)
 
-This document describes the current wire contracts between Headunit Revived, the Android bridge app, and the ESP32 HUD firmware.
+This document describes the current wire contracts between Headunit Revived, the Android bridge app, the ESP32 HUD firmware, and the Raspberry Pi HUD runtime.
 
 The protocol is intentionally small and additive. New JSON fields may be added over time, and receivers should ignore unknown fields.
 
@@ -11,6 +11,7 @@ The protocol is intentionally small and additive. New JSON fields may be added o
 - Keep existing field names stable once released.
 - Add fields instead of renaming or removing them.
 - Treat missing optional fields as unknown values.
+- Treat unknown JSON fields as additive and ignore them, but do not treat unknown `type` values as navigation packets.
 - Prefer numeric state fields for HUD behavior and localized strings only for display text.
 - Keep `docs/protocol.md`, Android packet code, and ESP32 packet parsing in sync.
 
@@ -71,12 +72,12 @@ The bridge sends one JSON object per UDP datagram to port `4210`.
 
 When an ESP32 target IP is known, Android sends only to that saved IP. When no target is known, Android sends to `255.255.255.255:4210`.
 
-Each payload includes a monotonic `seq` field. ESP32 ignores sequenced packets whose `seq` is less than or equal to the last accepted packet, preventing delayed UDP packets from redrawing stale HUD values.
+Each payload includes a monotonic `seq` field. ESP32 and Raspberry Pi HUD receivers ignore sequenced packets whose `seq` is less than or equal to the last accepted packet, preventing delayed UDP packets from redrawing stale HUD values.
 
 Example:
 
 ```json
-{"seq":123456,"distance_meters":300,"time_seconds":25,"road":"강남대로","road_bitmap_width":76,"road_bitmap_height":16,"road_bitmap_hex":"...","event_type":4,"turn_side":2,"turn_number":-1,"turn_angle":-1,"active":true,"instruction":"300m 후 우회전"}
+{"seq":123456,"distance_meters":300,"time_seconds":25,"road":"강남대로","road_bitmap_width":76,"road_bitmap_height":16,"road_bitmap_hex":"...","event_type":4,"turn_side":2,"turn_number":-1,"turn_angle":-1,"active":true,"instruction":"우회전"}
 ```
 
 | Field | Type | Required | Meaning |
@@ -90,7 +91,7 @@ Example:
 | `turn_number` | int | yes | Roundabout/exit number, or `-1` |
 | `turn_angle` | int | yes | Turn angle, or `-1` |
 | `active` | bool | yes | Whether active route guidance is available |
-| `instruction` | string | no | Human-readable instruction for app/debug surfaces |
+| `instruction` | string | no | Human-readable maneuver text for app/debug surfaces. Distance stays in `distance_meters` to avoid duplicated text. |
 | `road_bitmap_width` | int | no | Width of Android-generated road bitmap |
 | `road_bitmap_height` | int | no | Height of Android-generated road bitmap |
 | `road_bitmap_hex` | string | no | Row-major packed 1-bit bitmap data |
@@ -98,7 +99,7 @@ Example:
 | `icon_bitmap_height` | int | no | Height of Android-generated icon bitmap |
 | `icon_bitmap_hex` | string | no | Row-major packed 1-bit icon bitmap data |
 
-When `active=false`, ESP32 clears navigation faces instead of showing placeholder content such as `--` or `안내`.
+When `active=false`, ESP32 clears navigation faces instead of showing placeholder content such as `--` or `안내`. Raspberry Pi HUD runtime maps the packet to `nav.connected=false`, clears road/instruction text, and replaces numeric guidance fields with `--` so previous route guidance cannot remain on screen.
 
 The bridge clears active guidance only on an explicit inactive packet or bridge service shutdown. It does not send a waiting placeholder when Android Auto is active without route guidance.
 
@@ -141,7 +142,7 @@ The Android app accepts both compact JSON and older verbose JSON. Firmware shoul
 
 ## Wi-Fi Discovery
 
-Discovery uses UDP port `4211`. It exists for the case where BLE provisioning succeeded but Android needs to refresh or recover the ESP32 target address.
+Discovery uses UDP port `4211`. It exists for the case where BLE provisioning succeeded but Android needs to refresh or recover the HUD target address. Raspberry Pi HUD runtime also answers this discovery contract so Android can send navigation and backup speed on the same network without ESP32.
 
 Android sends this UTF-8 JSON probe:
 
@@ -161,11 +162,19 @@ ESP32 responds to the probe sender and periodically broadcasts a hello:
 {"type":"headunit_hud_hello","name":"Headunit HUD","ip":"192.168.43.23","udp_port":4210}
 ```
 
+Raspberry Pi HUD responds with the same hello type and identifies itself with `device_kind=pi_hud`:
+
+```json
+{"type":"headunit_hud_hello","name":"Headunit Pi HUD","ip":"192.168.43.20","udp_port":4210,"device_kind":"pi_hud"}
+```
+
 Android stores the UDP packet source address first, not the JSON `ip` field. The JSON IP is fallback/debug data only.
+
+If `device_kind` is absent, Android treats the target as the legacy ESP32 HUD. If `device_kind=pi_hud` or the hello name clearly indicates a Pi HUD, Android stores the target as a Pi HUD and does not send ESP32-only settings packets. It still sends navigation packets and `type=speed` backup speed packets.
 
 Automatic discovery is gated by Android Auto activity. BLE provisioning marks discovery as pending, but Android does not begin the 30 second automatic Wi-Fi search until it receives Headunit Revived's projection request broadcast or the first navigation update broadcast. Manual discovery remains available from the app UI and uses a 12 second search window. While a search is active, Android sends the first probe immediately and retries once per second.
 
-The foreground bridge service has a second recovery path independent of the setup screen. Once Android Auto projection or navigation is observed, the service sends HUD packets to the saved target when known, or to broadcast when no ESP32 target is known. It runs 8 second discovery attempts only when no ESP32 target is known. Failed attempts retry with exponential backoff from 10 seconds up to 60 seconds while Headunit is online and ESP32 is not connected. A successful discovery resets the backoff, stores the target host, sends current ESP32 settings, and replays the latest active HUD state if one exists.
+The foreground bridge service has a second recovery path independent of the setup screen. Once Android Auto projection or navigation is observed, the service sends HUD packets to the saved target when known, or to broadcast when no target is known. It runs 8 second discovery attempts only when no target is known. Failed attempts retry with exponential backoff from 10 seconds up to 60 seconds while Headunit is online and the HUD target is not connected. A successful discovery resets the backoff, stores the target host, sends current ESP32 settings only for ESP32 targets, and replays the latest active HUD state if one exists.
 
 ## Wi-Fi Reconnect
 
@@ -175,7 +184,7 @@ On reconnect, ESP32 restarts both the HUD UDP listener on `4210` and discovery l
 
 ## ESP32 Settings Packet
 
-Android sends settings packets to the HUD UDP port `4210`.
+Android sends settings packets to the HUD UDP port `4210` only for ESP32 targets. Raspberry Pi HUD targets keep their layout/settings locally and should receive navigation plus backup speed only.
 
 ```json
 {"type":"settings","debug_overlay":false,"speed_unit_visible":true,"speed_font_size":4,"language":"ko"}
@@ -200,6 +209,33 @@ Android stores the latest tablet GPS speed packet and retransmits it once per se
 ```
 
 If Android has no current speed value, it sends `speed_kmh=0` so the HUD shows a stationary speed instead of `--`. Android requests location updates every 500 ms, but callback timing depends on OS and GPS behavior. The 1 second speed replay keeps the HUD speed face refreshed.
+
+Raspberry Pi HUD stores this packet as `vehicle.speed_kmh_backup` only. Local OBD/CAN values remain the primary vehicle data source.
+The Pi runtime tracks navigation freshness separately from backup speed freshness, so continuous Android speed packets do not keep stale route guidance marked as connected.
+
+## Raspberry Pi Diagnostic Packets
+
+The production Pi HUD path reads vehicle data locally from iCar/ELM327 and CANable/SocketCAN. Android bridge must send navigation plus backup speed only.
+
+The Pi runtime intentionally ignores remote `vehicle_status` packets so UDP traffic cannot replace primary local OBD/CAN vehicle values. The Android bridge target policy is explicit: ESP32 targets may receive navigation, backup speed, and ESP32 settings packets; Raspberry Pi HUD targets may receive only navigation and `type=speed` backup-speed packets. Android must not send `vehicle_status`, `dtc_snapshot`, or `vehicle_debug` packets to any production HUD target.
+
+Debug-only packets are ignored by the Pi runtime by default. They can be accepted on the same UDP port `4210` only when the Pi runtime is started with `--allow-diagnostic-udp` for layout debugging and real-car investigation.
+
+DTC snapshot:
+
+```json
+{"type":"dtc_snapshot","seq":124,"stored":["P0133"],"pending":[],"permanent":[]}
+```
+
+The Pi runtime maps this to `dtc.stored`, `dtc.pending`, `dtc.permanent`, and recalculates `dtc.count` as stored plus pending count.
+
+Vehicle debug:
+
+```json
+{"type":"vehicle_debug","seq":125,"can_frame_count":128,"last_can_id":"0x316","obd_request":"010C","obd_response":"7E8 04 41 0C 1A F8"}
+```
+
+These fields are optional and map under `debug.*`. They are intended for layout debugging and real-car CAN/OBD investigation, not for Android navigation bridging.
 
 ## Dual OLED Layout
 

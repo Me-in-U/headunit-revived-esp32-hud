@@ -33,6 +33,20 @@ class ProvisioningStoreTest {
     }
 
     @Test
+    fun defaultsTargetKindToEsp32ForBackwardCompatibility() {
+        assertEquals(HudTargetKind.ESP32, ProvisioningStore.targetKind(context))
+    }
+
+    @Test
+    fun storesPiHudTargetKindWithDiscoveredTarget() {
+        ProvisioningStore.saveTarget(context, "192.168.43.22", 4210, HudTargetKind.PI_HUD)
+
+        assertEquals("192.168.43.22", ProvisioningStore.targetHost(context))
+        assertEquals(4210, ProvisioningStore.targetPort(context))
+        assertEquals(HudTargetKind.PI_HUD, ProvisioningStore.targetKind(context))
+    }
+
+    @Test
     fun storesEnglishHudLanguage() {
         ProvisioningStore.saveHudLanguage(context, Esp32SettingsPacket.LANGUAGE_ENGLISH)
 
@@ -109,8 +123,8 @@ class ProvisioningStoreTest {
             "ESP32 Wi-Fi 검색됨: 10.0.0.4:4210",
             koreanContext.getString(R.string.status_esp_wifi_discovery_success, "10.0.0.4", 4210)
         )
-        assertEquals("ESP 자동 검색중", koreanContext.getString(R.string.event_esp32_discovery_started))
-        assertEquals("ESP 자동 검색됨, 설정 전송됨", koreanContext.getString(R.string.event_esp32_discovery_found_sent))
+        assertEquals("HUD 자동 검색중", koreanContext.getString(R.string.event_esp32_discovery_started))
+        assertEquals("HUD 자동 검색됨", koreanContext.getString(R.string.event_esp32_discovery_found_sent))
         assertEquals(
             "ESP32 연결 상태 일부 수신. Wi-Fi 검색중",
             koreanContext.getString(R.string.ble_compact_status_received)

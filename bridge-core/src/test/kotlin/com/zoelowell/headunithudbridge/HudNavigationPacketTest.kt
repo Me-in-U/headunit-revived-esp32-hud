@@ -7,7 +7,7 @@ import org.junit.Test
 
 class HudNavigationPacketTest {
     @Test
-    fun formatsRightTurnInstructionWithDistance() {
+    fun formatsRightTurnInstructionWithoutDuplicatingDistance() {
         val packet = HudNavigationPacket(
             distanceMeters = 300,
             timeSeconds = 25,
@@ -18,9 +18,9 @@ class HudNavigationPacketTest {
             turnAngle = -1
         )
 
-        assertEquals("300m 후 우회전", packet.instruction)
+        assertEquals("우회전", packet.instruction)
         assertEquals(
-            "{\"distance_meters\":300,\"time_seconds\":25,\"road\":\"강남대로\",\"event_type\":4,\"turn_side\":2,\"turn_number\":-1,\"turn_angle\":-1,\"active\":true,\"instruction\":\"300m 후 우회전\"}",
+            "{\"distance_meters\":300,\"time_seconds\":25,\"road\":\"강남대로\",\"event_type\":4,\"turn_side\":2,\"turn_number\":-1,\"turn_angle\":-1,\"active\":true,\"instruction\":\"우회전\"}",
             packet.toJson()
         )
     }
@@ -52,7 +52,7 @@ class HudNavigationPacketTest {
             turnAngle = -1
         )
 
-        assertEquals("120m 후 경로 안내", packet.instruction)
+        assertEquals("경로 안내", packet.instruction)
     }
 
     @Test
@@ -141,7 +141,7 @@ class HudNavigationPacketTest {
         )
 
         assertEquals(
-            "{\"distance_meters\":300,\"time_seconds\":25,\"road\":\"강남대로\",\"road_bitmap_width\":16,\"road_bitmap_height\":8,\"road_bitmap_hex\":\"ff00aa55\",\"event_type\":4,\"turn_side\":2,\"turn_number\":-1,\"turn_angle\":-1,\"active\":true,\"instruction\":\"300m 후 우회전\"}",
+            "{\"distance_meters\":300,\"time_seconds\":25,\"road\":\"강남대로\",\"road_bitmap_width\":16,\"road_bitmap_height\":8,\"road_bitmap_hex\":\"ff00aa55\",\"event_type\":4,\"turn_side\":2,\"turn_number\":-1,\"turn_angle\":-1,\"active\":true,\"instruction\":\"우회전\"}",
             packet.toJson()
         )
     }
@@ -160,7 +160,7 @@ class HudNavigationPacketTest {
         )
 
         assertEquals(
-            "{\"distance_meters\":300,\"time_seconds\":25,\"road\":\"강남대로\",\"icon_bitmap_width\":8,\"icon_bitmap_height\":8,\"icon_bitmap_hex\":\"183c7effff7e3c18\",\"event_type\":4,\"turn_side\":2,\"turn_number\":-1,\"turn_angle\":-1,\"active\":true,\"instruction\":\"300m 후 우회전\"}",
+            "{\"distance_meters\":300,\"time_seconds\":25,\"road\":\"강남대로\",\"icon_bitmap_width\":8,\"icon_bitmap_height\":8,\"icon_bitmap_hex\":\"183c7effff7e3c18\",\"event_type\":4,\"turn_side\":2,\"turn_number\":-1,\"turn_angle\":-1,\"active\":true,\"instruction\":\"우회전\"}",
             packet.toJson()
         )
     }

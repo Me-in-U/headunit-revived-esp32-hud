@@ -111,7 +111,7 @@ class HudBridgeService : Service(), Esp32DiscoveryClient.Listener {
         startSpeedTrackingIfPermitted()
         executor.execute {
             if (hasKnownTarget()) {
-                sendCurrentSettings()
+                sendCurrentSettingsIfTargetAccepts()
             }
             publishBridgeStatus(LAST_EVENT_SERVICE_STARTED)
         }
@@ -337,17 +337,26 @@ class HudBridgeService : Service(), Esp32DiscoveryClient.Listener {
         Log.d(TAG, message)
     }
 
-    override fun onEsp32Discovered(host: String, port: Int) {
-        ProvisioningStore.saveTarget(this, host, port)
+    override fun onEsp32Discovered(host: String, port: Int, targetKind: HudTargetKind) {
+        ProvisioningStore.saveTarget(this, host, port, targetKind)
         discoveryInFlight = false
         discoveryRetryScheduled = false
         nextEspDiscoveryRetryAtMillis = 0L
         discoveryBackoff.reset()
 
         executor.execute {
-            val settingsAck = sendCurrentSettings()
+            val settingsAck = sendCurrentSettingsIfTargetAccepts()
             val replaySent = hudState.payloadForRefresh()?.let(::sendPayload) ?: false
-            publishBridgeStatus(if (settingsAck || replaySent) LAST_EVENT_DISCOVERY_FOUND_SENT else LAST_EVENT_DISCOVERY_FOUND_FAILED)
+            val targetReady = !targetKind.receivesEsp32Settings
+            publishBridgeStatus(if (targetReady || settingsAck || replaySent) LAST_EVENT_DISCOVERY_FOUND_SENT else LAST_EVENT_DISCOVERY_FOUND_FAILED)
+        }
+    }
+
+    private fun sendCurrentSettingsIfTargetAccepts(): Boolean {
+        return if (ProvisioningStore.targetKind(this).receivesEsp32Settings) {
+            sendCurrentSettings()
+        } else {
+            false
         }
     }
 

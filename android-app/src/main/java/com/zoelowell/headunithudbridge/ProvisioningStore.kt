@@ -6,6 +6,7 @@ object ProvisioningStore {
     private const val PREFS_NAME = "hud_provisioning"
     private const val KEY_TARGET_HOST = "target_host"
     private const val KEY_TARGET_PORT = "target_port"
+    private const val KEY_TARGET_KIND = "target_kind"
     private const val KEY_DEBUG_OVERLAY = "debug_overlay"
     private const val KEY_SPEED_UNIT_VISIBLE = "speed_unit_visible"
     private const val KEY_SPEED_FONT_SIZE = "speed_font_size"
@@ -13,11 +14,17 @@ object ProvisioningStore {
     private const val KEY_WIFI_PASSWORD = "wifi_password"
     private const val KEY_HUD_LANGUAGE = "hud_language"
 
-    fun saveTarget(context: Context, host: String, port: Int = BleProvisioningContract.DEFAULT_UDP_PORT) {
+    fun saveTarget(
+        context: Context,
+        host: String,
+        port: Int = BleProvisioningContract.DEFAULT_UDP_PORT,
+        targetKind: HudTargetKind = HudTargetKind.ESP32
+    ) {
         context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
             .edit()
             .putString(KEY_TARGET_HOST, host)
             .putInt(KEY_TARGET_PORT, port)
+            .putString(KEY_TARGET_KIND, targetKind.wireValue)
             .apply()
     }
 
@@ -32,11 +39,19 @@ object ProvisioningStore {
             .getInt(KEY_TARGET_PORT, BleProvisioningContract.DEFAULT_UDP_PORT)
     }
 
+    fun targetKind(context: Context): HudTargetKind {
+        return HudTargetKind.fromWireValue(
+            context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+                .getString(KEY_TARGET_KIND, HudTargetKind.ESP32.wireValue)
+        )
+    }
+
     fun clearTarget(context: Context) {
         context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
             .edit()
             .remove(KEY_TARGET_HOST)
             .remove(KEY_TARGET_PORT)
+            .remove(KEY_TARGET_KIND)
             .apply()
     }
 

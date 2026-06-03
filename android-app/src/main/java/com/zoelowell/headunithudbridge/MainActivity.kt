@@ -230,8 +230,8 @@ class MainActivity : Activity(), BleProvisioningClient.Listener, Esp32DiscoveryC
         }
     }
 
-    override fun onEsp32Discovered(host: String, port: Int) {
-        ProvisioningStore.saveTarget(this, host, port)
+    override fun onEsp32Discovered(host: String, port: Int, targetKind: HudTargetKind) {
+        ProvisioningStore.saveTarget(this, host, port, targetKind)
         runOnUiThread {
             bridgeStatus = bridgeStatus.copy(
                 espConnectionState = EspConnectionObservedState.CONNECTED,
@@ -243,7 +243,7 @@ class MainActivity : Activity(), BleProvisioningClient.Listener, Esp32DiscoveryC
             renderDashboardStatus()
             statusView.text = getString(R.string.status_esp_wifi_discovery_success, host, port)
         }
-        sendEsp32Settings(host = host, port = port, showStatus = false)
+        sendEsp32Settings(host = host, port = port, targetKind = targetKind, showStatus = false)
         refreshHudBridgeState()
     }
 
@@ -1017,12 +1017,16 @@ class MainActivity : Activity(), BleProvisioningClient.Listener, Esp32DiscoveryC
     private fun sendEsp32Settings(
         host: String? = ProvisioningStore.targetHost(this),
         port: Int = ProvisioningStore.targetPort(this),
+        targetKind: HudTargetKind = ProvisioningStore.targetKind(this),
         showStatus: Boolean = true
     ) {
         if (host.isNullOrBlank()) {
             if (showStatus) {
                 statusView.text = getString(R.string.debug_overlay_saved_waiting)
             }
+            return
+        }
+        if (!targetKind.receivesEsp32Settings) {
             return
         }
 

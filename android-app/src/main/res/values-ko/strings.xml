@@ -111,10 +111,10 @@
     <string name="event_projection_failed">프로젝션 상태 전송 실패</string>
     <string name="event_navigation_sent">내비게이션 전송</string>
     <string name="event_navigation_failed">내비게이션 전송 실패</string>
-    <string name="event_esp32_discovery_started">ESP 자동 검색중</string>
-    <string name="event_esp32_discovery_found_sent">ESP 자동 검색됨, 설정 전송됨</string>
-    <string name="event_esp32_discovery_found_failed">ESP 자동 검색됨, 설정 전송 실패</string>
-    <string name="event_esp32_discovery_failed">ESP 자동 검색 실패</string>
+    <string name="event_esp32_discovery_started">HUD 자동 검색중</string>
+    <string name="event_esp32_discovery_found_sent">HUD 자동 검색됨</string>
+    <string name="event_esp32_discovery_found_failed">HUD 자동 검색됨, 후속 전송 실패</string>
+    <string name="event_esp32_discovery_failed">HUD 자동 검색 실패</string>
     <string name="event_esp32_connected">ESP UDP 대상 준비</string>
     <string name="event_esp32_disconnected">ESP 대상 없음</string>
     <string name="event_none">수신 없음</string>

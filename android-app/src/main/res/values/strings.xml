@@ -111,10 +111,10 @@
     <string name="event_projection_failed">Projection state send failed</string>
     <string name="event_navigation_sent">Navigation sent</string>
     <string name="event_navigation_failed">Navigation send failed</string>
-    <string name="event_esp32_discovery_started">ESP auto discovery started</string>
-    <string name="event_esp32_discovery_found_sent">ESP auto discovery succeeded, settings sent</string>
-    <string name="event_esp32_discovery_found_failed">ESP auto discovery succeeded, settings send failed</string>
-    <string name="event_esp32_discovery_failed">ESP auto discovery failed</string>
+    <string name="event_esp32_discovery_started">HUD auto discovery started</string>
+    <string name="event_esp32_discovery_found_sent">HUD auto discovery succeeded</string>
+    <string name="event_esp32_discovery_found_failed">HUD auto discovery succeeded, follow-up send failed</string>
+    <string name="event_esp32_discovery_failed">HUD auto discovery failed</string>
     <string name="event_esp32_connected">ESP UDP target ready</string>
     <string name="event_esp32_disconnected">No ESP target</string>
     <string name="event_none">Nothing received</string>

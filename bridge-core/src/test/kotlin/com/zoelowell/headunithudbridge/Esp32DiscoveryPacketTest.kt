@@ -31,4 +31,30 @@ class Esp32DiscoveryPacketTest {
             Esp32DiscoveryPacket.discoveryProbeJson()
         )
     }
+
+    @Test
+    fun treatsLegacyHeadunitHudDiscoveryAsEsp32Target() {
+        assertEquals(
+            HudTargetKind.ESP32,
+            Esp32DiscoveryPacket.targetKindFromHello(name = "Headunit HUD", deviceKind = "")
+        )
+    }
+
+    @Test
+    fun treatsPiHudDiscoveryAsPiTargetByDeviceKindOrName() {
+        assertEquals(
+            HudTargetKind.PI_HUD,
+            Esp32DiscoveryPacket.targetKindFromHello(name = "Headunit HUD", deviceKind = "pi_hud")
+        )
+        assertEquals(
+            HudTargetKind.PI_HUD,
+            Esp32DiscoveryPacket.targetKindFromHello(name = "Headunit Pi HUD", deviceKind = "")
+        )
+    }
+
+    @Test
+    fun sendsEsp32SettingsOnlyToEsp32Targets() {
+        assertEquals(true, HudTargetKind.ESP32.receivesEsp32Settings)
+        assertEquals(false, HudTargetKind.PI_HUD.receivesEsp32Settings)
+    }
 }
