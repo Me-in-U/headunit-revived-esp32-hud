@@ -13,6 +13,7 @@ import pygame
 
 from hud_pi.renderer import MATERIAL_NAV_ICON_SOURCE, HudRenderer, format_value
 from hud_pi.state import HudState
+from hud_pi.viewport_scale import ViewportScale
 
 
 class RecordingScreen:
@@ -70,8 +71,7 @@ class RendererFormattingTest(unittest.TestCase):
     def test_font_uses_element_family_weight_and_style(self) -> None:
         renderer = object.__new__(HudRenderer)
         renderer.font_cache = {}
-        renderer.scale_x = 1
-        renderer.scale_y = 1
+        renderer.viewport_scale = ViewportScale(1, 1)
 
         with patch("hud_pi.renderer.pygame.font.SysFont", return_value=Mock()) as sys_font:
             renderer._font(24, family="Verdana", weight="bold", style="italic")
@@ -81,8 +81,7 @@ class RendererFormattingTest(unittest.TestCase):
     def test_default_font_uses_pygame_builtin_font_for_cross_platform_rendering(self) -> None:
         renderer = object.__new__(HudRenderer)
         renderer.font_cache = {}
-        renderer.scale_x = 1
-        renderer.scale_y = 1
+        renderer.viewport_scale = ViewportScale(1, 1)
         font = Mock()
 
         with patch("hud_pi.renderer.pygame.font.Font", return_value=font) as builtin_font, patch(
@@ -98,8 +97,7 @@ class RendererFormattingTest(unittest.TestCase):
     def test_korean_default_font_uses_cjk_system_font_candidates(self) -> None:
         renderer = object.__new__(HudRenderer)
         renderer.font_cache = {}
-        renderer.scale_x = 1
-        renderer.scale_y = 1
+        renderer.viewport_scale = ViewportScale(1, 1)
 
         with patch("hud_pi.renderer.pygame.font.SysFont", return_value=Mock()) as sys_font, patch(
             "hud_pi.renderer.pygame.font.Font"
@@ -110,6 +108,24 @@ class RendererFormattingTest(unittest.TestCase):
         font_names = sys_font.call_args.args[0]
         self.assertIn("Noto Sans CJK KR", font_names)
         builtin_font.assert_not_called()
+
+    def test_sport_gauge_renders_with_auto_tick_interval(self) -> None:
+        screen = pygame.Surface((320, 220))
+        layout = {"canvas": {"width": 320, "height": 220, "background": "#000000"}, "elements": []}
+        renderer = HudRenderer(layout, screen)
+        element = {
+            "id": "rpm",
+            "type": "value",
+            "x": 0,
+            "y": 0,
+            "w": 320,
+            "h": 220,
+            "font_size": 28,
+            "min_value": 0,
+            "max_value": 8000,
+        }
+
+        renderer._draw_value_sport_gauge(element, 3500, "3500")
 
     def test_text_element_uses_layout_language_translation(self) -> None:
         screen = pygame.Surface((420, 96))
@@ -167,10 +183,11 @@ class RendererFormattingTest(unittest.TestCase):
             "max_value": 220,
         }
 
-        with patch.object(renderer, "_draw_value_bar") as draw_bar:
+        with patch("hud_pi.pygame_textual_rendering.draw_value_style_element") as draw_value_style:
             renderer._draw_textual(element, HudState({"vehicle": {"speed_kmh": 110}}))
 
-        draw_bar.assert_called_once()
+        draw_value_style.assert_called_once()
+        self.assertEqual("bar", draw_value_style.call_args.kwargs["style"])
 
     def test_value_bar_draws_segment_separators_for_cluster_style(self) -> None:
         screen = pygame.Surface((360, 100))
@@ -196,11 +213,14 @@ class RendererFormattingTest(unittest.TestCase):
             "inactive_color": "#2d3740",
         }
 
-        with patch.object(renderer, "_draw_value_label") as draw_label, patch("hud_pi.renderer.pygame.draw.line", wraps=pygame.draw.line) as draw_line:
+        with patch("hud_pi.pygame_value_rendering.draw_optional_value_label") as draw_label, patch(
+            "hud_pi.renderer.pygame.draw.line", wraps=pygame.draw.line
+        ) as draw_line:
             renderer._draw_value_bar(element, 72, "72")
 
         self.assertGreaterEqual(draw_line.call_count, 6)
-        draw_label.assert_not_called()
+        draw_label.assert_called_once()
+        self.assertEqual("bar", draw_label.call_args.kwargs["style"])
 
     def test_value_bar_draws_label_only_when_explicitly_enabled(self) -> None:
         screen = pygame.Surface((360, 100))
@@ -220,10 +240,11 @@ class RendererFormattingTest(unittest.TestCase):
             "show_value_label": True,
         }
 
-        with patch.object(renderer, "_draw_value_label") as draw_label:
+        with patch("hud_pi.pygame_value_rendering.draw_optional_value_label") as draw_label:
             renderer._draw_value_bar(element, 72, "72")
 
         draw_label.assert_called_once()
+        self.assertEqual("bar", draw_label.call_args.kwargs["style"])
 
     def test_textual_elements_do_not_draw_background_panels_or_left_rules(self) -> None:
         screen = pygame.Surface((240, 80))
@@ -276,7 +297,9 @@ class RendererFormattingTest(unittest.TestCase):
         }
         element_rect = pygame.Rect(20, 20, 300, 60)
 
-        with patch.object(renderer, "_draw_value_label"), patch("hud_pi.renderer.pygame.draw.rect", wraps=pygame.draw.rect) as draw_rect:
+        with patch("hud_pi.pygame_value_rendering.draw_optional_value_label"), patch(
+            "hud_pi.renderer.pygame.draw.rect", wraps=pygame.draw.rect
+        ) as draw_rect:
             renderer._draw_value_bar(element, 72, "72")
 
         full_panel_calls = [
@@ -313,10 +336,12 @@ class RendererFormattingTest(unittest.TestCase):
 
         for draw_method in (renderer._draw_value_analog, renderer._draw_value_needle, renderer._draw_value_sport_gauge):
             with self.subTest(draw_method=draw_method.__name__):
-                with patch.object(renderer, "_draw_value_label") as draw_label, patch("hud_pi.renderer.pygame.draw.arc", wraps=pygame.draw.arc) as draw_arc:
+                with patch("hud_pi.pygame_value_rendering.draw_optional_value_label") as draw_label, patch(
+                    "hud_pi.renderer.pygame.draw.arc", wraps=pygame.draw.arc
+                ) as draw_arc:
                     draw_method(element, 110, "110")
                 self.assertGreaterEqual(draw_arc.call_count, 1)
-                draw_label.assert_not_called()
+                draw_label.assert_called_once()
                 track_call = draw_arc.call_args_list[0]
                 self.assertAlmostEqual(expected_start, track_call.args[3], delta=0.01)
                 self.assertAlmostEqual(expected_end, track_call.args[4], delta=0.01)
@@ -337,10 +362,11 @@ class RendererFormattingTest(unittest.TestCase):
             "max_value": 220,
         }
 
-        with patch.object(renderer, "_draw_value_needle") as draw_needle:
+        with patch("hud_pi.pygame_textual_rendering.draw_value_style_element") as draw_value_style:
             renderer._draw_textual(element, HudState({"vehicle": {"speed_kmh": 80}}))
 
-        draw_needle.assert_called_once()
+        draw_value_style.assert_called_once()
+        self.assertEqual("needle", draw_value_style.call_args.kwargs["style"])
 
     def test_value_analog_style_uses_analog_renderer(self) -> None:
         screen = RecordingScreen()
@@ -358,10 +384,11 @@ class RendererFormattingTest(unittest.TestCase):
             "max_value": 220,
         }
 
-        with patch.object(renderer, "_draw_value_analog") as draw_analog:
+        with patch("hud_pi.pygame_textual_rendering.draw_value_style_element") as draw_value_style:
             renderer._draw_textual(element, HudState({"vehicle": {"speed_kmh": 80}}))
 
-        draw_analog.assert_called_once()
+        draw_value_style.assert_called_once()
+        self.assertEqual("analog", draw_value_style.call_args.kwargs["style"])
 
     def test_value_sport_gauge_style_uses_sport_renderer(self) -> None:
         screen = RecordingScreen()
@@ -379,10 +406,11 @@ class RendererFormattingTest(unittest.TestCase):
             "max_value": 8000,
         }
 
-        with patch.object(renderer, "_draw_value_sport_gauge") as draw_sport:
+        with patch("hud_pi.pygame_textual_rendering.draw_value_style_element") as draw_value_style:
             renderer._draw_textual(element, HudState({"vehicle": {"rpm": 4200}}))
 
-        draw_sport.assert_called_once()
+        draw_value_style.assert_called_once()
+        self.assertEqual("sport_gauge", draw_value_style.call_args.kwargs["style"])
 
     def test_nav_icon_element_uses_navigation_icon_renderer(self) -> None:
         screen = RecordingScreen()
