@@ -1,0 +1,131 @@
+.app-shell {
+  height: 100vh;
+  display: grid;
+  grid-template-rows: 64px 54px minmax(0, 1fr);
+  background:
+    linear-gradient(180deg, rgba(64, 167, 255, 0.07), transparent 210px),
+    var(--bg);
+}
+
+.topbar,
+.config-strip {
+  display: flex;
+  align-items: center;
+  border-bottom: 1px solid var(--line);
+  padding: 0 18px;
+}
+
+.topbar {
+  justify-content: space-between;
+}
+
+.brand {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  min-width: 0;
+}
+
+.brand-mark {
+  width: 34px;
+  height: 34px;
+  display: grid;
+  place-items: center;
+  border: 1px solid rgba(36, 211, 107, 0.45);
+  border-radius: 8px;
+  background: rgba(36, 211, 107, 0.13);
+  color: var(--accent);
+  font-weight: 800;
+}
+
+.brand-title {
+  font-size: 15px;
+  font-weight: 750;
+  line-height: 1.2;
+}
+
+.brand-subtitle {
+  max-width: 760px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+.brand-subtitle.dirty {
+  color: #ffcf7a;
+}
+
+.toolbar,
+.canvas-actions,
+.inspector-actions {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.config-strip {
+  gap: 12px;
+  background: rgba(13, 19, 26, 0.72);
+}
+
+.config-strip label {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 650;
+}
+
+.workspace {
+  display: grid;
+  grid-template-columns: minmax(680px, 1fr) 330px;
+  min-height: 0;
+  gap: 14px;
+  padding: 14px;
+}
+
+.editor-stack {
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  align-content: stretch;
+  height: 100%;
+  min-height: 0;
+  gap: 14px;
+}
+
+.sidebar,
+.canvas-panel {
+  min-height: 0;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: rgba(17, 24, 32, 0.92);
+  box-shadow: var(--shadow);
+}
+
+.sidebar {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.panel-heading,
+.canvas-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  padding: 14px;
+  border-bottom: 1px solid var(--line);
+}
+
+.panel-heading p,
+.canvas-header p,
+.layers-header span {
+  color: var(--muted);
+  font-size: 12px;
+  margin-top: 4px;
+}
