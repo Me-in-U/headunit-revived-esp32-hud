@@ -1,0 +1,19 @@
+{
+  "name": "headunit-hud-layout-editor-electron",
+  "version": "0.1.0",
+  "description": "Modern Electron layout editor for the Headunit Pi HUD.",
+  "main": "src/main.js",
+  "private": true,
+  "scripts": {
+    "start": "electron .",
+    "test": "node --test",
+    "generate-nav-icons": "node scripts/generate-nav-icons.js",
+    "build": "electron-packager . HeadunitHudLayoutEditor --platform=win32 --arch=x64 --out=dist --overwrite --ignore=dist --ignore=tests --extra-resource=../pi-hud --extra-resource=../layouts --extra-resource=../vehicles"
+  },
+  "devDependencies": {
+    "@electron/packager": "^18.4.4",
+    "@material-design-icons/svg": "^0.14.15",
+    "electron": "^42.3.2",
+    "sharp": "^0.34.5"
+  }
+}

@@ -1,0 +1,135 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Headunit HUD Layout Editor</title>
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <div id="app" class="app-shell">
+      <header class="topbar">
+        <div class="brand">
+          <div class="brand-mark">H</div>
+          <div>
+            <div class="brand-title">Headunit HUD Layout Editor</div>
+            <div id="filePath" class="brand-subtitle">Loading layout...</div>
+          </div>
+        </div>
+        <div class="toolbar" aria-label="Layout actions">
+          <button id="openBtn" class="tool-button" data-i18n="open">Open</button>
+          <button id="saveBtn" class="tool-button primary" data-i18n="save">Save</button>
+          <button id="saveAsBtn" class="tool-button" data-i18n="saveAs">Save As</button>
+          <button id="undoBtn" class="tool-button" data-i18n="undo" disabled>Undo</button>
+          <button id="redoBtn" class="tool-button" data-i18n="redo" disabled>Redo</button>
+          <button id="resetBtn" class="tool-button danger-ghost" data-i18n="reset">Reset</button>
+          <button id="validateBtn" class="tool-button" data-i18n="validate">Validate</button>
+          <button id="exportPngBtn" class="tool-button">PNG</button>
+          <button id="fieldPackBtn" class="tool-button" data-i18n="fieldPack">Field Pack</button>
+        </div>
+      </header>
+
+      <section class="config-strip" aria-label="Layout context">
+        <label>
+          <span data-i18n="vehicle">Vehicle</span>
+          <select id="vehicleSelect"></select>
+        </label>
+        <label>
+          <span data-i18n="screen">Screen</span>
+          <select id="screenSelect">
+            <option value="standalone">standalone</option>
+            <option value="bridge">bridge</option>
+          </select>
+        </label>
+        <button id="importScreenBtn" class="inline-button" data-i18n="importScreen">Import Other Screen</button>
+        <label>
+          <span data-i18n="language">Language</span>
+          <select id="languageSelect">
+            <option value="ko">ko</option>
+            <option value="en">en</option>
+          </select>
+        </label>
+        <label>
+          <span data-i18n="background">Background</span>
+          <input id="backgroundColor" type="color" value="#05080c" />
+        </label>
+        <button id="weatherBtn" class="inline-button" data-i18n="weather">Weather</button>
+        <button id="backgroundImageBtn" class="inline-button" data-i18n="bgImage">BG Image</button>
+        <button id="clearBackgroundBtn" class="inline-button danger-ghost" data-i18n="clearBg">Clear BG</button>
+      </section>
+
+      <main class="workspace">
+        <section class="editor-stack">
+          <section class="canvas-panel">
+            <div class="canvas-header">
+              <div>
+                <h1 data-i18n="canvasTitle">1920 x 480 HUD Canvas</h1>
+                <p id="canvasMeta">Pi renderer preview</p>
+              </div>
+              <div class="canvas-actions">
+                <button id="zoomFitBtn" class="inline-button" data-i18n="fit">Fit</button>
+                <button id="duplicateBtn" class="inline-button" data-i18n="duplicate">Duplicate</button>
+                <button id="deleteBtn" class="inline-button danger-ghost" data-i18n="delete">Delete</button>
+              </div>
+            </div>
+            <div id="previewFrame" class="preview-frame">
+              <div id="previewStage" class="preview-stage">
+                <img id="previewImage" alt="HUD preview" draggable="false" />
+                <div id="dragGhost" class="drag-ghost" hidden></div>
+                <div id="selectionOverlay" class="selection-overlay"></div>
+              </div>
+            </div>
+            <div class="statusbar">
+              <div id="statusText">Ready</div>
+              <div id="pixelStatus"></div>
+            </div>
+          </section>
+
+          <aside class="sidebar palette-panel">
+            <div class="panel-heading">
+              <div>
+                <h2 data-i18n="elements">Elements</h2>
+                <p data-i18n="elementsHint">Add by driver task</p>
+              </div>
+          </div>
+          <nav id="categoryTabs" class="category-tabs" aria-label="Palette categories"></nav>
+          <div class="palette-search">
+            <input id="paletteSearch" type="text" data-i18n-placeholder="searchPalette" placeholder="Search elements" />
+          </div>
+          <div id="paletteButtons" class="palette-list"></div>
+        </aside>
+        </section>
+
+        <aside class="sidebar inspector-panel">
+          <div class="panel-heading">
+            <div>
+              <h2 data-i18n="inspector">Inspector</h2>
+              <p id="selectedLabel">No selection</p>
+            </div>
+          </div>
+          <div class="inspector-actions">
+            <button id="frontBtn" class="inline-button" data-i18n="bringFront">Bring front</button>
+            <button id="backBtn" class="inline-button" data-i18n="sendBack">Send back</button>
+          </div>
+          <form id="propertyForm" class="property-grid"></form>
+          <section id="validationDrawer" class="validation-drawer" hidden>
+            <div class="validation-header">
+              <h2 data-i18n="validationIssues">Validation</h2>
+              <button id="validationCloseBtn" class="inline-button" data-i18n="close">Close</button>
+            </div>
+            <div id="validationMessages" class="validation-messages"></div>
+          </section>
+          <div class="layers-header">
+            <h2 data-i18n="layers">Layers</h2>
+            <span id="layerCount">0</span>
+          </div>
+          <div id="layerList" class="layer-list"></div>
+        </aside>
+      </main>
+    </div>
+
+    <script src="./editorState.js"></script>
+    <script src="./dragGhost.js"></script>
+    <script src="./app.js"></script>
+  </body>
+</html>
