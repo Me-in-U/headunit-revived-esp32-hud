@@ -35,18 +35,20 @@ if [ ! -d "${APP_DIR}/.git" ]; then
   exit 0
 fi
 
+APP_DIR="$(cd "${APP_DIR}" && pwd -P)"
+GIT=(git -c "safe.directory=${APP_DIR}")
 cd "${APP_DIR}"
 
-CURRENT_HEAD="$(git rev-parse HEAD)"
-git fetch "${REMOTE}" "${BRANCH}"
-FETCHED_HEAD="$(git rev-parse FETCH_HEAD)"
+CURRENT_HEAD="$("${GIT[@]}" rev-parse HEAD)"
+"${GIT[@]}" fetch "${REMOTE}" "${BRANCH}"
+FETCHED_HEAD="$("${GIT[@]}" rev-parse FETCH_HEAD)"
 
 if [ "${CURRENT_HEAD}" = "${FETCHED_HEAD}" ]; then
   echo "[OK] already up to date at ${CURRENT_HEAD}"
   exit 0
 fi
 
-git merge --ff-only FETCH_HEAD
+"${GIT[@]}" merge --ff-only FETCH_HEAD
 
 PYTHON="${HEADUNIT_HUD_PYTHON:-}"
 if [ -z "${PYTHON}" ]; then

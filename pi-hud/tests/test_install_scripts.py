@@ -204,8 +204,10 @@ class InstallScriptsTest(unittest.TestCase):
         update_script = (pi_hud_root / "scripts" / "update-from-git.sh").read_text(encoding="utf-8")
 
         self.assertIn('truthy "${HEADUNIT_HUD_AUTO_UPDATE:-0}"', update_script)
-        self.assertIn("git fetch", update_script)
-        self.assertIn("git merge --ff-only", update_script)
+        self.assertIn('GIT=(git -c "safe.directory=${APP_DIR}")', update_script)
+        self.assertLess(update_script.index('GIT=(git -c "safe.directory=${APP_DIR}")'), update_script.index("rev-parse HEAD"))
+        self.assertIn('"${GIT[@]}" fetch "${REMOTE}" "${BRANCH}"', update_script)
+        self.assertIn('"${GIT[@]}" merge --ff-only FETCH_HEAD', update_script)
         self.assertIn("pip install -r", update_script)
         self.assertIn("systemctl restart headunit-pi-hud.service", update_script)
 
