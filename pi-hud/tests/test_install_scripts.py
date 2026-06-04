@@ -195,6 +195,11 @@ class InstallScriptsTest(unittest.TestCase):
         self.assertIn("HEADUNIT_HUD_WIDTH=%s", setup_script)
         self.assertIn("HEADUNIT_HUD_HEIGHT=%s", setup_script)
         self.assertIn("clear_screen_test_env", setup_script)
+        self.assertIn("desktop_user()", setup_script)
+        self.assertIn("run_desktop_hud()", setup_script)
+        self.assertIn("systemctl stop headunit-pi-hud.service", setup_script)
+        self.assertIn('sudo -u "${user}" env "${env_args[@]}"', setup_script)
+        self.assertIn("Starting direct HUD screen test", setup_script)
         self.assertIn("EnvironmentFile=-/run/headunit-pi-hud-test.env", service_file)
         self.assertIn("HEADUNIT_HUD_TEST_ENV_FILE", run_script)
         self.assertIn('. "${TEST_ENV_FILE}"', run_script)
@@ -222,7 +227,10 @@ class InstallScriptsTest(unittest.TestCase):
         self.assertIn('"${GIT[@]}" fetch "${REMOTE}" "${BRANCH}"', update_script)
         self.assertIn('"${GIT[@]}" merge --ff-only FETCH_HEAD', update_script)
         self.assertIn("pip install -r", update_script)
-        self.assertIn("systemctl restart headunit-pi-hud.service", update_script)
+        self.assertIn("restart_service()", update_script)
+        self.assertIn("systemctl restart", update_script)
+        self.assertIn("[WARN] updated git checkout, but failed to restart", update_script)
+        self.assertIn("journalctl -u", update_script)
 
 
 if __name__ == "__main__":

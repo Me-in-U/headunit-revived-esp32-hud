@@ -32,6 +32,56 @@ python_bin() {
   fi
 }
 
+desktop_user() {
+  local user="${SUDO_USER:-}"
+  if [ -n "${user}" ] && [ "${user}" != "root" ]; then
+    printf '%s\n' "${user}"
+    return 0
+  fi
+  user="$(logname 2>/dev/null || true)"
+  if [ -n "${user}" ] && [ "${user}" != "root" ]; then
+    printf '%s\n' "${user}"
+    return 0
+  fi
+  user="$(getent passwd 1000 | cut -d: -f1 || true)"
+  if [ -n "${user}" ]; then
+    printf '%s\n' "${user}"
+    return 0
+  fi
+  id -un
+}
+
+run_desktop_hud() {
+  local app user uid home
+  local env_args=()
+  app="$(installed_app_dir)"
+  user="$(desktop_user)"
+  uid="$(id -u "${user}")"
+  home="$(getent passwd "${user}" | cut -d: -f6)"
+
+  env_args+=("HEADUNIT_HUD_ENV_FILE=${ENV_FILE}")
+  env_args+=("HEADUNIT_HUD_TEST_ENV_FILE=${TEST_ENV_FILE}")
+  env_args+=("HOME=${home}")
+  if [ -d "/run/user/${uid}" ]; then
+    env_args+=("XDG_RUNTIME_DIR=/run/user/${uid}")
+  fi
+  if [ -S "/run/user/${uid}/wayland-0" ]; then
+    env_args+=("WAYLAND_DISPLAY=wayland-0")
+  fi
+  if [ -S /tmp/.X11-unix/X0 ]; then
+    env_args+=("DISPLAY=:0")
+  fi
+  if [ -r "${home}/.Xauthority" ]; then
+    env_args+=("XAUTHORITY=${home}/.Xauthority")
+  fi
+
+  if [ "$(id -u)" -eq 0 ] && [ "${user}" != "root" ]; then
+    sudo -u "${user}" env "${env_args[@]}" "${app}/pi-hud/scripts/run-from-env.sh"
+  else
+    env "${env_args[@]}" "${app}/pi-hud/scripts/run-from-env.sh"
+  fi
+}
+
 set_env_value() {
   local key="$1"
   local value="$2"
@@ -106,9 +156,10 @@ screen_test() {
     echo "[WARN] Could not detect display size; screen test will use configured width/height."
   fi
   write_screen_test_env "${width}" "${height}"
-  run_sudo systemctl restart headunit-pi-hud.service
-  echo "[OK] Dummy screen test mode enabled. Opening live HUD logs; press Ctrl+C to exit logs."
-  run_sudo journalctl -u headunit-pi-hud.service -f
+  run_sudo systemctl stop headunit-pi-hud.service || true
+  echo "[OK] Starting direct HUD screen test; press Ctrl+C to exit."
+  echo "[INFO] This does not depend on systemd desktop session access."
+  run_desktop_hud
 }
 
 auto_configure_hardware() {

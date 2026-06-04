@@ -20,6 +20,17 @@ truthy() {
   esac
 }
 
+restart_service() {
+  local service="$1"
+  if systemctl restart "${service}"; then
+    return 0
+  fi
+  echo "[WARN] updated git checkout, but failed to restart ${service}" >&2
+  systemctl status "${service}" -n 30 --no-pager || true
+  journalctl -u "${service}" -n 80 --no-pager || true
+  return 0
+}
+
 if ! truthy "${HEADUNIT_HUD_AUTO_UPDATE:-0}"; then
   echo "[SKIP] HEADUNIT_HUD_AUTO_UPDATE is disabled"
   exit 0
@@ -64,8 +75,8 @@ if [ -f "${APP_DIR}/pi-hud/requirements.txt" ]; then
 fi
 
 if [ "${SERVICE}" = "headunit-pi-hud.service" ]; then
-  systemctl restart headunit-pi-hud.service
+  restart_service headunit-pi-hud.service
 else
-  systemctl restart "${SERVICE}"
+  restart_service "${SERVICE}"
 fi
 echo "[OK] updated ${APP_DIR} from ${CURRENT_HEAD} to ${FETCHED_HEAD}"
