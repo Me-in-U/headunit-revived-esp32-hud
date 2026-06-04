@@ -28,6 +28,17 @@ if ! id -u "${SERVICE_USER}" >/dev/null 2>&1; then
   exit 3
 fi
 
+set_env_value() {
+  local key="$1"
+  local value="$2"
+  touch "${ENV_FILE}"
+  if grep -q "^${key}=" "${ENV_FILE}"; then
+    sed -i "s|^${key}=.*|${key}=${value}|" "${ENV_FILE}"
+  else
+    printf '%s=%s\n' "${key}" "${value}" >> "${ENV_FILE}"
+  fi
+}
+
 SRC_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/../.." && pwd)"
 
 apt-get update
@@ -52,6 +63,7 @@ python3 -m venv "${APP_DIR}/.venv"
 if [ ! -f "${ENV_FILE}" ]; then
   install -m 0644 "${APP_DIR}/pi-hud/config/pi-hud.env.example" "${ENV_FILE}"
 fi
+set_env_value HEADUNIT_HUD_DUMMY 0
 
 if [ -f "${APP_DIR}/setup-pi-hud.sh" ]; then
   chmod 0755 "${APP_DIR}/setup-pi-hud.sh"

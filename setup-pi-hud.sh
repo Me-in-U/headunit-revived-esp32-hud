@@ -152,6 +152,7 @@ install_or_update() {
   run_sudo bash "${ROOT_DIR}/pi-hud/scripts/install-pi.sh" "${APP_DIR}"
   echo "[2/3] Enabling HUD autostart..."
   clear_screen_test_env
+  set_env_value HEADUNIT_HUD_DUMMY 0
   run_sudo systemctl unmask headunit-pi-hud.service || true
   run_sudo systemctl enable headunit-pi-hud.service
   run_sudo systemctl restart headunit-pi-hud.service

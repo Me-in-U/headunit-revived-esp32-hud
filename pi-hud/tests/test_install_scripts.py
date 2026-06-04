@@ -26,6 +26,15 @@ class InstallScriptsTest(unittest.TestCase):
         self.assertIn('follow_journal headunit-pi-hud.service', setup_script)
         self.assertIn("journalctl -u headunit-pi-hud-update.service", setup_script)
 
+    def test_root_setup_install_update_restores_real_runtime_mode(self) -> None:
+        repo_root = Path(__file__).resolve().parents[2]
+        setup_script = (repo_root / "setup-pi-hud.sh").read_text(encoding="utf-8")
+        install_start = setup_script.index("install_or_update()")
+        restart_index = setup_script.index("systemctl restart headunit-pi-hud.service", install_start)
+        dummy_reset_index = setup_script.index("set_env_value HEADUNIT_HUD_DUMMY 0", install_start)
+
+        self.assertLess(dummy_reset_index, restart_index)
+
     def test_pi_install_marks_runtime_helper_scripts_executable(self) -> None:
         pi_hud_root = Path(__file__).resolve().parents[1]
         install_script = (pi_hud_root / "scripts" / "install-pi.sh").read_text(encoding="utf-8")
@@ -52,6 +61,19 @@ class InstallScriptsTest(unittest.TestCase):
         missing = [helper for helper in expected_helpers if f'pi-hud/scripts/{helper}"' not in install_script]
 
         self.assertEqual([], missing)
+
+    def test_pi_install_restores_real_runtime_mode_when_env_file_exists(self) -> None:
+        pi_hud_root = Path(__file__).resolve().parents[1]
+        install_script = (pi_hud_root / "scripts" / "install-pi.sh").read_text(encoding="utf-8")
+        self.assertIn("set_env_value()", install_script)
+        self.assertIn("set_env_value HEADUNIT_HUD_DUMMY 0", install_script)
+
+        env_create_index = install_script.index('install -m 0644 "${APP_DIR}/pi-hud/config/pi-hud.env.example" "${ENV_FILE}"')
+        dummy_reset_index = install_script.index("set_env_value HEADUNIT_HUD_DUMMY 0")
+        auto_config_index = install_script.index("auto-configure-hardware.py")
+
+        self.assertLess(env_create_index, dummy_reset_index)
+        self.assertLess(dummy_reset_index, auto_config_index)
 
     def test_pi_install_defaults_service_user_to_invoking_sudo_user_before_pi_fallback(self) -> None:
         pi_hud_root = Path(__file__).resolve().parents[1]
