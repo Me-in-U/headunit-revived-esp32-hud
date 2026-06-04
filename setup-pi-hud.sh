@@ -3,6 +3,7 @@ set -euo pipefail
 
 APP_DIR="${HEADUNIT_HUD_APP_DIR:-/opt/headunit-pi-hud}"
 ENV_FILE="${HEADUNIT_HUD_ENV_FILE:-/etc/headunit-pi-hud.env}"
+TEST_ENV_FILE="${HEADUNIT_HUD_TEST_ENV_FILE:-/run/headunit-pi-hud-test.env}"
 ROOT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 
 run_sudo() {
@@ -42,10 +43,45 @@ set_env_value() {
   fi
 }
 
+clear_screen_test_env() {
+  run_sudo rm -f "${TEST_ENV_FILE}"
+}
+
+detect_framebuffer_size() {
+  local fb_path="${HEADUNIT_HUD_FRAMEBUFFER_SIZE_FILE:-/sys/class/graphics/fb0/virtual_size}"
+  local raw normalized width height extra
+  [ -r "${fb_path}" ] || return 1
+  raw="$(head -n 1 "${fb_path}" 2>/dev/null || true)"
+  normalized="${raw//x/,}"
+  normalized="${normalized// /,}"
+  IFS=',' read -r width height extra <<< "${normalized}"
+  if [[ "${width}" =~ ^[0-9]+$ ]] && [[ "${height}" =~ ^[0-9]+$ ]] && [ "${width}" -gt 0 ] && [ "${height}" -gt 0 ]; then
+    printf '%s %s\n' "${width}" "${height}"
+    return 0
+  fi
+  return 1
+}
+
+write_screen_test_env() {
+  local width="${1:-}"
+  local height="${2:-}"
+  run_sudo install -d -m 0755 "$(dirname -- "${TEST_ENV_FILE}")"
+  {
+    printf 'HEADUNIT_HUD_DUMMY=1\n'
+    printf 'HEADUNIT_HUD_REQUIRE_HANDOFF=0\n'
+    if [ -n "${width}" ] && [ -n "${height}" ]; then
+      printf 'HEADUNIT_HUD_WIDTH=%s\n' "${width}"
+      printf 'HEADUNIT_HUD_HEIGHT=%s\n' "${height}"
+    fi
+  } | run_sudo tee "${TEST_ENV_FILE}" >/dev/null
+  run_sudo chmod 0644 "${TEST_ENV_FILE}"
+}
+
 install_or_update() {
   echo "[1/3] Installing/updating Headunit Pi HUD..."
   run_sudo bash "${ROOT_DIR}/pi-hud/scripts/install-pi.sh" "${APP_DIR}"
   echo "[2/3] Enabling HUD autostart..."
+  clear_screen_test_env
   run_sudo systemctl unmask headunit-pi-hud.service || true
   run_sudo systemctl enable headunit-pi-hud.service
   run_sudo systemctl restart headunit-pi-hud.service
@@ -59,7 +95,17 @@ install_or_update() {
 }
 
 screen_test() {
-  set_env_value HEADUNIT_HUD_DUMMY 1
+  local size width height
+  width=""
+  height=""
+  if size="$(detect_framebuffer_size)"; then
+    width="${size%% *}"
+    height="${size##* }"
+    echo "[OK] Detected display ${width}x${height}; screen test will use it."
+  else
+    echo "[WARN] Could not detect display size; screen test will use configured width/height."
+  fi
+  write_screen_test_env "${width}" "${height}"
   run_sudo systemctl restart headunit-pi-hud.service
   echo "[OK] Dummy screen test mode enabled. Opening live HUD logs; press Ctrl+C to exit logs."
   run_sudo journalctl -u headunit-pi-hud.service -f
@@ -71,6 +117,7 @@ auto_configure_hardware() {
   app="$(installed_app_dir)"
   python="$(python_bin)"
   run_sudo "${python}" "${app}/pi-hud/scripts/auto-configure-hardware.py" --apply --force
+  clear_screen_test_env
   set_env_value HEADUNIT_HUD_DUMMY 0
   run_sudo systemctl restart headunit-pi-hud.service
   echo "[OK] Hardware auto-config finished. Run status check next."

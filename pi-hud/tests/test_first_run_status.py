@@ -126,6 +126,54 @@ class FirstRunStatusTest(unittest.TestCase):
 
         self.assertEqual("layouts/avante_hd_2010_default.json", args.layout)
 
+    def test_script_loads_screen_test_env_override_after_persistent_env(self) -> None:
+        module = load_first_run_status_module()
+        with tempfile.TemporaryDirectory() as temp_dir:
+            env_file = Path(temp_dir) / "headunit-pi-hud.env"
+            test_env_file = Path(temp_dir) / "headunit-pi-hud-test.env"
+            env_file.write_text(
+                "\n".join(
+                    [
+                        "HEADUNIT_HUD_WIDTH=1920",
+                        "HEADUNIT_HUD_HEIGHT=480",
+                        "HEADUNIT_HUD_DUMMY=0",
+                        "HEADUNIT_HUD_REQUIRE_HANDOFF=1",
+                    ]
+                ),
+                encoding="utf-8",
+            )
+            test_env_file.write_text(
+                "\n".join(
+                    [
+                        "HEADUNIT_HUD_WIDTH=1280",
+                        "HEADUNIT_HUD_HEIGHT=720",
+                        "HEADUNIT_HUD_DUMMY=1",
+                        "HEADUNIT_HUD_REQUIRE_HANDOFF=0",
+                    ]
+                ),
+                encoding="utf-8",
+            )
+            clean_env = {
+                key: value
+                for key, value in os.environ.items()
+                if not key.startswith("HEADUNIT_HUD_")
+            }
+            clean_env["HEADUNIT_HUD_ENV_FILE"] = str(env_file)
+            clean_env["HEADUNIT_HUD_TEST_ENV_FILE"] = str(test_env_file)
+
+            with patch.dict(os.environ, clean_env, clear=True):
+                loaded = module.load_runtime_environment()
+                width = os.environ["HEADUNIT_HUD_WIDTH"]
+                height = os.environ["HEADUNIT_HUD_HEIGHT"]
+                dummy = os.environ["HEADUNIT_HUD_DUMMY"]
+                require_handoff = os.environ["HEADUNIT_HUD_REQUIRE_HANDOFF"]
+
+        self.assertIn("HEADUNIT_HUD_WIDTH", loaded)
+        self.assertEqual("1280", width)
+        self.assertEqual("720", height)
+        self.assertEqual("1", dummy)
+        self.assertEqual("0", require_handoff)
+
     def test_report_runs_live_obd_and_can_probes_when_requested(self) -> None:
         environ = {
             "HEADUNIT_HUD_LAYOUT": "layouts/avante_hd_2010_default.json",

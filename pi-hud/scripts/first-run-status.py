@@ -23,8 +23,21 @@ def default_env_file_path() -> Path:
     return Path("/etc/headunit-pi-hud.env")
 
 
+def default_test_env_file_path() -> Path:
+    configured = os.environ.get("HEADUNIT_HUD_TEST_ENV_FILE", "").strip()
+    if configured:
+        return Path(configured)
+    return Path("/run/headunit-pi-hud-test.env")
+
+
 def load_runtime_environment() -> list[str]:
-    return load_env_file(default_env_file_path(), os.environ)
+    loaded = load_env_file(default_env_file_path(), os.environ)
+    loaded.extend(load_env_file(default_test_env_file_path(), os.environ, override=True))
+    return loaded
+
+
+def screen_test_override_active() -> bool:
+    return default_test_env_file_path().is_file()
 
 
 def default_layout_path() -> str:
@@ -81,6 +94,8 @@ def format_report(report: dict) -> str:
         f"CAN: {report['can']['channel'] or 'not-configured'}",
         f"Android bridge: {report['android_bridge']['role']} (optional)",
     ]
+    if screen_test_override_active():
+        lines.append(f"Screen test override: active ({default_test_env_file_path()})")
     if report["input_probes"]["enabled"]:
         lines.extend(
             [

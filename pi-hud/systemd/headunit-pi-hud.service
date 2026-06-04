@@ -8,6 +8,7 @@ Type=simple
 User=pi
 WorkingDirectory=/opt/headunit-pi-hud
 EnvironmentFile=-/etc/headunit-pi-hud.env
+EnvironmentFile=-/run/headunit-pi-hud-test.env
 Environment=PYGAME_HIDE_SUPPORT_PROMPT=1
 Environment=SDL_AUDIODRIVER=dummy
 ExecStartPre=-+/opt/headunit-pi-hud/pi-hud/scripts/setup-obd-from-env.sh

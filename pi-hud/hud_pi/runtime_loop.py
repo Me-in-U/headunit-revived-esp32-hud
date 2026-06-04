@@ -46,6 +46,19 @@ def run_pygame_loop(
     flags = 0 if args.windowed else pygame_module.FULLSCREEN
     screen = pygame_module.display.set_mode((args.width, args.height), flags)
     pygame_module.display.set_caption("Headunit Pi HUD")
+    driver = "unknown"
+    try:
+        driver = pygame_module.display.get_driver()
+    except Exception:
+        pass
+    try:
+        actual_width, actual_height = screen.get_size()
+    except AttributeError:
+        actual_width, actual_height = args.width, args.height
+    print(
+        f"[INFO] pygame display driver={driver} size={actual_width}x{actual_height} fullscreen={not args.windowed}",
+        flush=True,
+    )
     renderer = renderer_factory(layout, screen)
     clock = pygame_module.time.Clock()
     running = True

@@ -16,6 +16,14 @@ if [ -n "${ENV_FILE}" ]; then
   set +a
 fi
 
+TEST_ENV_FILE="${HEADUNIT_HUD_TEST_ENV_FILE:-/run/headunit-pi-hud-test.env}"
+if [ -r "${TEST_ENV_FILE}" ]; then
+  set -a
+  # shellcheck disable=SC1090
+  . "${TEST_ENV_FILE}"
+  set +a
+fi
+
 truthy() {
   case "${1:-0}" in
     1|true|TRUE|yes|YES|on|ON) return 0 ;;
@@ -92,6 +100,8 @@ fi
 if [ -n "${CAN_CHANNEL}" ]; then
   ARGS+=(--can-channel "${CAN_CHANNEL}")
 fi
+
+echo "[INFO] HUD runtime display ${WIDTH}x${HEIGHT}, windowed=${HEADUNIT_HUD_WINDOWED:-0}, dummy=${HEADUNIT_HUD_DUMMY:-0}, SDL_VIDEODRIVER=${SDL_VIDEODRIVER:-auto}"
 
 cd "${APP_DIR}"
 exec "${PYTHON}" "${ARGS[@]}"

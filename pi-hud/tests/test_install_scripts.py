@@ -180,6 +180,25 @@ class InstallScriptsTest(unittest.TestCase):
         self.assertNotIn('sed \\\n  "${APP_DIR}/pi-hud/systemd/headunit-pi-hud-update.timer"', install_script)
         self.assertIn("systemctl unmask headunit-pi-hud-update.timer", setup_script)
 
+    def test_screen_test_uses_ephemeral_env_and_detected_display_size(self) -> None:
+        repo_root = Path(__file__).resolve().parents[2]
+        pi_hud_root = Path(__file__).resolve().parents[1]
+        setup_script = (repo_root / "setup-pi-hud.sh").read_text(encoding="utf-8")
+        run_script = (pi_hud_root / "scripts" / "run-from-env.sh").read_text(encoding="utf-8")
+        service_file = (pi_hud_root / "systemd" / "headunit-pi-hud.service").read_text(encoding="utf-8")
+
+        self.assertIn('TEST_ENV_FILE="${HEADUNIT_HUD_TEST_ENV_FILE:-/run/headunit-pi-hud-test.env}"', setup_script)
+        self.assertIn("detect_framebuffer_size()", setup_script)
+        self.assertIn("HEADUNIT_HUD_FRAMEBUFFER_SIZE_FILE", setup_script)
+        self.assertIn("HEADUNIT_HUD_DUMMY=1", setup_script)
+        self.assertIn("HEADUNIT_HUD_REQUIRE_HANDOFF=0", setup_script)
+        self.assertIn("HEADUNIT_HUD_WIDTH=%s", setup_script)
+        self.assertIn("HEADUNIT_HUD_HEIGHT=%s", setup_script)
+        self.assertIn("clear_screen_test_env", setup_script)
+        self.assertIn("EnvironmentFile=-/run/headunit-pi-hud-test.env", service_file)
+        self.assertIn("HEADUNIT_HUD_TEST_ENV_FILE", run_script)
+        self.assertIn('. "${TEST_ENV_FILE}"', run_script)
+
     def test_git_update_script_fast_forwards_and_restarts_runtime_only_when_enabled(self) -> None:
         pi_hud_root = Path(__file__).resolve().parents[1]
         update_script = (pi_hud_root / "scripts" / "update-from-git.sh").read_text(encoding="utf-8")
