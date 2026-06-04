@@ -199,6 +199,19 @@ class InstallScriptsTest(unittest.TestCase):
         self.assertIn("HEADUNIT_HUD_TEST_ENV_FILE", run_script)
         self.assertIn('. "${TEST_ENV_FILE}"', run_script)
 
+    def test_runtime_script_autodetects_desktop_display_for_systemd_service(self) -> None:
+        pi_hud_root = Path(__file__).resolve().parents[1]
+        run_script = (pi_hud_root / "scripts" / "run-from-env.sh").read_text(encoding="utf-8")
+
+        self.assertIn("configure_display_environment()", run_script)
+        self.assertIn("XDG_RUNTIME_DIR=/run/user/${uid}", run_script)
+        self.assertIn("WAYLAND_DISPLAY=wayland-0", run_script)
+        self.assertIn("/tmp/.X11-unix/X0", run_script)
+        self.assertIn("DISPLAY=:0", run_script)
+        self.assertIn("XAUTHORITY=${HOME}/.Xauthority", run_script)
+        self.assertIn("SDL_VIDEODRIVER=kmsdrm", run_script)
+        self.assertIn("HUD display env DISPLAY=", run_script)
+
     def test_git_update_script_fast_forwards_and_restarts_runtime_only_when_enabled(self) -> None:
         pi_hud_root = Path(__file__).resolve().parents[1]
         update_script = (pi_hud_root / "scripts" / "update-from-git.sh").read_text(encoding="utf-8")

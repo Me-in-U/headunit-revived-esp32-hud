@@ -31,6 +31,28 @@ truthy() {
   esac
 }
 
+configure_display_environment() {
+  local uid runtime_dir
+  uid="$(id -u)"
+  runtime_dir="/run/user/${uid}"
+
+  if [ -z "${XDG_RUNTIME_DIR:-}" ] && [ -d "${runtime_dir}" ]; then
+    export XDG_RUNTIME_DIR=/run/user/${uid}
+  fi
+  if [ -z "${WAYLAND_DISPLAY:-}" ] && [ -n "${XDG_RUNTIME_DIR:-}" ] && [ -S "${XDG_RUNTIME_DIR}/wayland-0" ]; then
+    export WAYLAND_DISPLAY=wayland-0
+  fi
+  if [ -z "${DISPLAY:-}" ] && [ -S /tmp/.X11-unix/X0 ]; then
+    export DISPLAY=:0
+  fi
+  if [ -z "${XAUTHORITY:-}" ] && [ -n "${HOME:-}" ] && [ -r "${HOME}/.Xauthority" ]; then
+    export XAUTHORITY=${HOME}/.Xauthority
+  fi
+  if [ -z "${HEADUNIT_HUD_SDL_VIDEODRIVER:-}" ] && [ -z "${DISPLAY:-}" ] && [ -z "${WAYLAND_DISPLAY:-}" ] && { [ -e /dev/dri/card0 ] || [ -e /dev/dri/renderD128 ]; }; then
+    export SDL_VIDEODRIVER=kmsdrm
+  fi
+}
+
 APP_DIR="${HEADUNIT_HUD_APP_DIR:-${ROOT_DIR}}"
 PI_DIR="${HEADUNIT_HUD_PI_DIR:-${APP_DIR}/pi-hud}"
 LAYOUT="${HEADUNIT_HUD_LAYOUT:-${APP_DIR}/layouts/avante_hd_2010_default.json}"
@@ -46,6 +68,7 @@ OBD_BLE_RX_UUID="${HEADUNIT_HUD_OBD_BLE_RX_UUID:-}"
 OBD_BLE_TX_UUID="${HEADUNIT_HUD_OBD_BLE_TX_UUID:-}"
 CAN_CHANNEL="${HEADUNIT_HUD_CAN_CHANNEL:-}"
 
+configure_display_environment
 if [ -n "${HEADUNIT_HUD_SDL_VIDEODRIVER:-}" ]; then
   export SDL_VIDEODRIVER="${HEADUNIT_HUD_SDL_VIDEODRIVER}"
 fi
@@ -101,6 +124,7 @@ if [ -n "${CAN_CHANNEL}" ]; then
   ARGS+=(--can-channel "${CAN_CHANNEL}")
 fi
 
+echo "[INFO] HUD display env DISPLAY=${DISPLAY:-none}, WAYLAND_DISPLAY=${WAYLAND_DISPLAY:-none}, XDG_RUNTIME_DIR=${XDG_RUNTIME_DIR:-none}, SDL_VIDEODRIVER=${SDL_VIDEODRIVER:-auto}"
 echo "[INFO] HUD runtime display ${WIDTH}x${HEIGHT}, windowed=${HEADUNIT_HUD_WINDOWED:-0}, dummy=${HEADUNIT_HUD_DUMMY:-0}, SDL_VIDEODRIVER=${SDL_VIDEODRIVER:-auto}"
 
 cd "${APP_DIR}"
