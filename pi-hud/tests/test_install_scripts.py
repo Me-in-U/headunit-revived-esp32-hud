@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import subprocess
 import unittest
 from pathlib import Path
 
@@ -71,6 +72,7 @@ class InstallScriptsTest(unittest.TestCase):
             "verify-layout.py",
             "probe-bridge.py",
             "collect-vehicle-baseline.py",
+            "summarize-can-baseline.py",
             "first-run-status.py",
             "acceptance-check.py",
             "scan-ble-obd.py",
@@ -289,8 +291,8 @@ class InstallScriptsTest(unittest.TestCase):
         update_script = (pi_hud_root / "scripts" / "update-from-git.sh").read_text(encoding="utf-8")
 
         self.assertIn('truthy "${HEADUNIT_HUD_AUTO_UPDATE:-0}"', update_script)
-        self.assertIn('GIT=(git -c "safe.directory=${APP_DIR}")', update_script)
-        self.assertLess(update_script.index('GIT=(git -c "safe.directory=${APP_DIR}")'), update_script.index("rev-parse HEAD"))
+        self.assertIn('GIT=(git -c "safe.directory=${APP_DIR}" -c "core.fileMode=false")', update_script)
+        self.assertLess(update_script.index('GIT=(git -c "safe.directory=${APP_DIR}" -c "core.fileMode=false")'), update_script.index("rev-parse HEAD"))
         self.assertIn('"${GIT[@]}" fetch "${REMOTE}" "${BRANCH}"', update_script)
         self.assertIn('"${GIT[@]}" merge --ff-only FETCH_HEAD', update_script)
         self.assertIn("pip install -r", update_script)
@@ -298,6 +300,51 @@ class InstallScriptsTest(unittest.TestCase):
         self.assertIn("systemctl restart", update_script)
         self.assertIn("[WARN] updated git checkout, but failed to restart", update_script)
         self.assertIn("journalctl -u", update_script)
+
+    def test_git_update_ignores_installer_chmod_only_changes(self) -> None:
+        pi_hud_root = Path(__file__).resolve().parents[1]
+        update_script = (pi_hud_root / "scripts" / "update-from-git.sh").read_text(encoding="utf-8")
+
+        self.assertIn('-c "core.fileMode=false"', update_script)
+
+    def test_installed_runtime_entrypoints_are_tracked_executable(self) -> None:
+        repo_root = Path(__file__).resolve().parents[2]
+        executable_paths = [
+            "setup-pi-hud.sh",
+            "pi-hud/scripts/canable-up.sh",
+            "pi-hud/scripts/icar-rfcomm-bind.sh",
+            "pi-hud/scripts/setup-obd-from-env.sh",
+            "pi-hud/scripts/run-from-env.sh",
+            "pi-hud/scripts/setup-canable-from-env.sh",
+            "pi-hud/scripts/collect-vehicle-baseline.py",
+            "pi-hud/scripts/summarize-can-baseline.py",
+            "pi-hud/scripts/first-run-status.py",
+            "pi-hud/scripts/acceptance-check.py",
+            "pi-hud/scripts/scan-ble-obd.py",
+            "pi-hud/scripts/auto-configure-hardware.py",
+            "pi-hud/scripts/build-field-pack.py",
+            "pi-hud/scripts/apply-field-pack.py",
+            "pi-hud/scripts/diagnose-inputs.py",
+            "pi-hud/scripts/verify-layout.py",
+            "pi-hud/scripts/update-from-git.sh",
+            "pi-hud/scripts/probe-bridge.py",
+        ]
+
+        result = subprocess.run(
+            ["git", "ls-files", "-s", *executable_paths],
+            cwd=repo_root,
+            check=True,
+            capture_output=True,
+            text=True,
+        )
+        modes_by_path = {
+            line.split(maxsplit=3)[3]: line.split(maxsplit=1)[0]
+            for line in result.stdout.splitlines()
+        }
+
+        self.assertEqual(executable_paths, sorted(modes_by_path, key=executable_paths.index))
+        for path in executable_paths:
+            self.assertEqual("100755", modes_by_path[path], path)
 
     def test_git_update_skips_pip_when_requirements_are_unchanged(self) -> None:
         pi_hud_root = Path(__file__).resolve().parents[1]

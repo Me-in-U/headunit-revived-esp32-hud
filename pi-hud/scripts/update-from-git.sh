@@ -75,7 +75,7 @@ if [ ! -d "${APP_DIR}/.git" ]; then
 fi
 
 APP_DIR="$(cd "${APP_DIR}" && pwd -P)"
-GIT=(git -c "safe.directory=${APP_DIR}")
+GIT=(git -c "safe.directory=${APP_DIR}" -c "core.fileMode=false")
 cd "${APP_DIR}"
 
 CURRENT_HEAD="$("${GIT[@]}" rev-parse HEAD)"

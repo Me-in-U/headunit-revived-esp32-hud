@@ -76,6 +76,7 @@ chmod 0755 \
   "${APP_DIR}/pi-hud/scripts/run-from-env.sh" \
   "${APP_DIR}/pi-hud/scripts/setup-canable-from-env.sh" \
   "${APP_DIR}/pi-hud/scripts/collect-vehicle-baseline.py" \
+  "${APP_DIR}/pi-hud/scripts/summarize-can-baseline.py" \
   "${APP_DIR}/pi-hud/scripts/first-run-status.py" \
   "${APP_DIR}/pi-hud/scripts/acceptance-check.py" \
   "${APP_DIR}/pi-hud/scripts/scan-ble-obd.py" \
