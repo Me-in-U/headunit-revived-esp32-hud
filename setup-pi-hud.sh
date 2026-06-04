@@ -5,6 +5,7 @@ APP_DIR="${HEADUNIT_HUD_APP_DIR:-/opt/headunit-pi-hud}"
 ENV_FILE="${HEADUNIT_HUD_ENV_FILE:-/etc/headunit-pi-hud.env}"
 TEST_ENV_FILE="${HEADUNIT_HUD_TEST_ENV_FILE:-/run/headunit-pi-hud-test.env}"
 ROOT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
+FIELD_PACK_FILE_NAME="${HEADUNIT_HUD_FIELD_PACK_FILE_NAME:-headunit-pi-field-pack.zip}"
 
 run_sudo() {
   if [ "$(id -u)" -eq 0 ]; then
@@ -29,6 +30,14 @@ python_bin() {
     printf '%s\n' "${app}/.venv/bin/python"
   else
     printf '%s\n' "python3"
+  fi
+}
+
+field_pack_package_path() {
+  if [ -n "${HEADUNIT_HUD_FIELD_PACK_PATH:-}" ]; then
+    printf '%s\n' "${HEADUNIT_HUD_FIELD_PACK_PATH}"
+  else
+    printf '%s\n' "${ROOT_DIR}/field-pack/${FIELD_PACK_FILE_NAME}"
   fi
 }
 
@@ -197,6 +206,26 @@ auto_configure_hardware() {
   echo "[OK] Hardware auto-config finished. Run status check next."
 }
 
+apply_field_pack_from_repo() {
+  local app
+  local package
+  local python
+  app="$(installed_app_dir)"
+  python="$(python_bin)"
+  package="$(field_pack_package_path)"
+
+  if [ ! -f "${package}" ]; then
+    echo "[FAIL] Field Pack zip not found: ${package}" >&2
+    echo "[INFO] Copy it to ${ROOT_DIR}/field-pack/${FIELD_PACK_FILE_NAME}, or set HEADUNIT_HUD_FIELD_PACK_PATH." >&2
+    return 1
+  fi
+
+  run_sudo "${python}" "${app}/pi-hud/scripts/apply-field-pack.py" "${package}" --app-dir "${app}" --env-file "${ENV_FILE}"
+  clear_screen_test_env
+  run_sudo systemctl restart headunit-pi-hud.service
+  echo "[OK] Field Pack applied and HUD service restarted."
+}
+
 restart_hud() {
   run_sudo systemctl restart headunit-pi-hud.service
   echo "[OK] HUD service restarted."
@@ -249,6 +278,7 @@ Headunit Pi HUD Setup
 6. Status check
 7. Run update now
 8. Toggle automatic updates
+9. Apply Field Pack from field-pack/headunit-pi-field-pack.zip
 0. Exit
 
 MENU
@@ -264,6 +294,7 @@ run_choice() {
     6) status_check ;;
     7) run_update_now ;;
     8) toggle_auto_update ;;
+    9) apply_field_pack_from_repo ;;
     0) exit 0 ;;
     *) echo "Unknown option: $1" >&2; return 1 ;;
   esac

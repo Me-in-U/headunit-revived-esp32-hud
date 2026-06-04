@@ -26,7 +26,8 @@ layout-editor-electron/dist/
 layout-editor-electron/electron-screenshot.png
 layout-editor-electron/layout-preview-verify.png
 vehicle-baseline/
-field-pack/
+field-pack/*.zip
+!field-pack/README.ko.md
 
 # OS
 Thumbs.db

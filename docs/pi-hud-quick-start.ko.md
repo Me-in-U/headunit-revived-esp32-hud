@@ -47,22 +47,30 @@ Windows에서 에디터를 열고 레이아웃을 수정한 뒤:
 Field Pack 버튼 -> headunit-pi-field-pack.zip 저장
 ```
 
-zip 파일을 Pi로 복사한다. SSH 이름이 `user@hud`라면 Windows PowerShell에서:
-
-```powershell
-scp .\headunit-pi-field-pack.zip user@hud:~/
-```
-
-Pi 터미널에서 적용한다.
+저장한 zip 파일을 USB 메모리에 복사한다. USB 메모리를 Pi에 꽂고 Pi 터미널에서 장치 이름을 확인한다.
 
 ```bash
-sudo /opt/headunit-pi-hud/.venv/bin/python \
-  /opt/headunit-pi-hud/pi-hud/scripts/apply-field-pack.py \
-  ~/headunit-pi-field-pack.zip
-sudo systemctl restart headunit-pi-hud.service
+lsblk -f
 ```
 
-이미 iCar/CANable 설정을 해둔 Pi에서는 `--overwrite-env`를 붙이지 않는다. 붙이면 `/etc/headunit-pi-hud.env`가 예제값으로 덮일 수 있다.
+보통 USB 파티션은 `/dev/sda1`처럼 보인다. 장치 이름이 다르면 아래 명령의 `/dev/sda1`만 실제 값으로 바꾼다.
+
+```bash
+sudo mkdir -p /mnt/usb
+sudo mount /dev/sda1 /mnt/usb
+mkdir -p ~/headunit-revived-esp32-hud/field-pack
+cp /mnt/usb/headunit-pi-field-pack.zip ~/headunit-revived-esp32-hud/field-pack/
+sudo umount /mnt/usb
+```
+
+Pi 터미널에서 setup 명령으로 복사한 zip을 적용한다.
+
+```bash
+cd ~/headunit-revived-esp32-hud
+sudo bash setup-pi-hud.sh 9
+```
+
+`setup-pi-hud.sh 9`는 기존 `/etc/headunit-pi-hud.env`를 보존한다. 이미 iCar/CANable 설정을 해둔 Pi에서도 그대로 실행하면 된다.
 
 ## 3. OBD/CAN 없이 화면만 테스트
 

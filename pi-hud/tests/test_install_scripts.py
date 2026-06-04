@@ -26,6 +26,28 @@ class InstallScriptsTest(unittest.TestCase):
         self.assertIn('follow_journal headunit-pi-hud.service', setup_script)
         self.assertIn("journalctl -u headunit-pi-hud-update.service", setup_script)
 
+    def test_root_setup_applies_repo_field_pack_zip(self) -> None:
+        repo_root = Path(__file__).resolve().parents[2]
+        setup_script = (repo_root / "setup-pi-hud.sh").read_text(encoding="utf-8")
+
+        self.assertIn('FIELD_PACK_FILE_NAME="${HEADUNIT_HUD_FIELD_PACK_FILE_NAME:-headunit-pi-field-pack.zip}"', setup_script)
+        self.assertIn("field_pack_package_path()", setup_script)
+        self.assertIn("apply_field_pack_from_repo()", setup_script)
+        self.assertIn('"${ROOT_DIR}/field-pack/${FIELD_PACK_FILE_NAME}"', setup_script)
+        self.assertIn('"${app}/pi-hud/scripts/apply-field-pack.py"', setup_script)
+        self.assertIn('"${package}" --app-dir "${app}" --env-file "${ENV_FILE}"', setup_script)
+        self.assertIn("Apply Field Pack from field-pack/headunit-pi-field-pack.zip", setup_script)
+        self.assertIn("9) apply_field_pack_from_repo ;;", setup_script)
+
+    def test_field_pack_drop_folder_is_tracked_without_zip_payloads(self) -> None:
+        repo_root = Path(__file__).resolve().parents[2]
+        gitignore = (repo_root / ".gitignore").read_text(encoding="utf-8")
+
+        self.assertTrue((repo_root / "field-pack" / "README.ko.md").exists())
+        self.assertIn("field-pack/*.zip", gitignore)
+        self.assertIn("!field-pack/README.ko.md", gitignore)
+        self.assertNotIn("\nfield-pack/\n", f"\n{gitignore}\n")
+
     def test_root_setup_install_update_restores_real_runtime_mode(self) -> None:
         repo_root = Path(__file__).resolve().parents[2]
         setup_script = (repo_root / "setup-pi-hud.sh").read_text(encoding="utf-8")
