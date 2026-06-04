@@ -7,6 +7,7 @@
     renderPalette(state, dom, deps);
     renderProperties(state, dom, deps);
     renderLayers(state, dom, deps);
+    renderVehicleTools(state, dom, deps);
     renderOverlay(state, dom, deps);
     deps.updateFilePath();
     return true;
@@ -66,12 +67,23 @@
     });
   }
 
+  function renderVehicleTools(state, dom, deps) {
+    if (!deps.vehicleLiveView) {
+      return;
+    }
+    deps.vehicleLiveView.renderVehicleTools(state, dom, {
+      documentRef: deps.documentRef,
+      translate: deps.translate,
+    });
+  }
+
   const api = {
     renderAll,
     renderLayers,
     renderOverlay,
     renderPalette,
     renderProperties,
+    renderVehicleTools,
     renderTopControls,
   };
 

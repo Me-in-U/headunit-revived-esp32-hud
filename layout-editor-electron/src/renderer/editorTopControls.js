@@ -8,6 +8,9 @@
     dom.screenSelect.value = state.currentScreen;
     dom.languageSelect.value = state.appLanguage;
     dom.backgroundColor.value = validColor(canvas.background) ? canvas.background : "#05080c";
+    if (dom.simulationToggle) {
+      dom.simulationToggle.checked = Boolean(state.simulationEnabled);
+    }
     dom.undoBtn.disabled = !state.history.undo.length;
     dom.redoBtn.disabled = !state.history.redo.length;
     dom.paletteSearch.value = state.paletteQuery;

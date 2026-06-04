@@ -9,7 +9,7 @@ Pi가 메인 HUD 컴퓨터다. Android 브릿지 앱은 있어도 되고 없어�
 | 입력 | 담당 장치 | 없을 때 동작 |
 | --- | --- | --- |
 | OBD 표준 PID | Raspberry Pi + ELM327/iCar Pro 2S | OBD 상태를 stale/error로 표시하고 dummy 또는 CAN 값 유지 |
-| CAN raw frame | Raspberry Pi + CANable(SocketCAN) | CAN 상태를 stale/error로 표시 |
+| 확정 CAN runtime frame | Raspberry Pi + CANable(SocketCAN) | CAN 상태를 stale/error로 표시 |
 | Android 내비 | Android bridge UDP | 내비 영역만 disconnected/stale 표시 |
 | 화면 렌더링 | Raspberry Pi HDMI | 계속 표시 |
 
@@ -22,7 +22,7 @@ Pi가 메인 HUD 컴퓨터다. Android 브릿지 앱은 있어도 되고 없어�
 | HUD 컴퓨터 | Raspberry Pi 4B 4GB |
 | 화면 | 8.8 inch 1920x480 HDMI IPS 모듈 |
 | OBD 표준 PID | Vgate iCar Pro 2S 또는 ELM327 계열 |
-| CAN raw sniffing | CANable 호환 보드, candleLight 펌웨어, SocketCAN |
+| 확정 CAN runtime decode | CANable 호환 보드, candleLight 펌웨어, SocketCAN |
 | OBD 분기 | OBD2 male-to-female splitter 또는 연장 케이블에서 6/14, 4/5, 16 분기 |
 
 CANable은 OBD 포트의 표준 CAN-H/CAN-L인 6번/14번을 먼저 본다. 사용자가 확인한 DLC pin 구성에서는 6/14가 존재하고 11번은 없으므로, Qvia 문서류에서 보이는 3/11 C-CAN 후보는 이 차량의 1차 대상에서 제외한다.
@@ -33,11 +33,11 @@ CANable은 OBD 포트의 표준 CAN-H/CAN-L인 6번/14번을 먼저 본다. 사�
 2. Android bridge의 GPS speed는 `speed_kmh_backup`으로만 둔다.
 3. Android bridge의 Headunit Revived 내비 정보는 `nav.*`에만 반영한다.
 4. 값이 일정 시간 갱신되지 않으면 stale로 표시한다. Android speed backup freshness와 navigation freshness는 분리해서, speed packet만 계속 들어와도 내비 연결 상태를 살려두지 않는다. Android가 `active=false` 내비 packet을 보내면 Pi는 이전 안내 문구/도로명/거리 값을 지워서 stale route guidance가 화면에 남지 않게 한다.
-5. 아반떼 HD 전용 CAN decode가 확정되기 전에는 raw frame count와 last CAN ID만 표시한다.
+5. 아반떼 HD 전용 CAN decode가 확정되기 전에는 raw frame count와 last CAN ID만 runtime 진단값으로 표시한다. Raw CAN 분석과 신호 작성은 Windows 레이아웃 에디터의 `CAN Analysis` 탭에서 진행한다.
 
 현재 ELM327/iCar 입력은 표준 OBD PID로 RPM(`010C`), speed(`010D`), coolant(`0105`), control module voltage(`0142`), MIL/DTC count(`0101`)를 읽는다. 전압은 `0142`가 응답하지 않으면 ELM adapter voltage 명령인 `ATRV`를 fallback으로 사용한다. DTC는 Mode 03(stored), Mode 07(pending), Mode 0A(permanent)를 5초 간격으로 polling해서 `dtc.stored`, `dtc.pending`, `dtc.permanent`에 넣는다.
 
-현재 CANable/SocketCAN 입력은 차종별 decode가 확정되기 전 단계이므로 `vehicle.can_state`, `debug.can_frame_count`, `debug.last_can_id`를 먼저 제공한다. 기본 레이아웃에는 CAN 상태가 표시되고, 레이아웃 에디터의 Diagnostics 탭에서 CAN frame count, last CAN ID, OBD request/response debug text를 추가할 수 있다.
+현재 CANable/SocketCAN 입력은 차종별 decode가 확정되기 전 단계이므로 `vehicle.can_state`, `debug.can_frame_count`, `debug.last_can_id`를 먼저 제공한다. 기본 레이아웃에는 CAN 상태가 표시되고, Windows 레이아웃 에디터의 `Connection`, `CAN Analysis`, `OBD Analysis` 탭에서 live 연결 상태, CAN frame count, last CAN ID, OBD request/response debug text를 확인하거나 preview simulation에 쓸 수 있다.
 
 차종별 raw CAN 매핑은 선택 차량 profile의 `can_signals` 배열에서 읽는다. 각 signal은 `confirmed:true`, `frame_id`, `name`, `start_byte`가 있어야 Pi runtime에서 decode 대상이 된다. Byte 단위 값은 `length`를 쓰고, warning lamp나 switch처럼 bit flag인 값은 `start_bit`과 `bit_length`를 쓴다. Bit 번호는 해당 byte의 LSB를 `0`으로 보는 방식이다. `value_map`이 있으면 raw 정수값을 문자열/상태값으로 치환하고, 없으면 `raw * scale + offset`을 `name` 경로에 저장한다. 예를 들어 `name:"vehicle.gear_actual"`은 HUD state의 `vehicle.gear_actual`로, `name:"warnings.abs"`는 `warnings.abs`로 들어간다. 아반떼 HD 기본 profile은 아직 실차에서 확정한 raw CAN ID가 없으므로 `can_signals: []`로 둔다.
 
@@ -316,25 +316,16 @@ BLE MAC은 보이지만 RX/TX UUID를 모르면 Pi에서 자동 탐색을 먼저
 
 이 명령은 기본적으로 `/etc/headunit-pi-hud.env`를 먼저 읽고, `HEADUNIT_HUD_ENV_FILE`이 지정되어 있으면 그 파일을 대신 읽는다. 따라서 설치 후 환경파일에 `HEADUNIT_HUD_OBD_PORT`, `HEADUNIT_HUD_CAN_CHANNEL`을 넣어두면 별도 `set -a` 없이 같은 값으로 진단한다. Serial/rfcomm OBD가 비어 있고 `HEADUNIT_HUD_OBD_BLE_MAC`, `HEADUNIT_HUD_OBD_BLE_RX_UUID`, `HEADUNIT_HUD_OBD_BLE_TX_UUID`가 있으면 BLE ELM327 probe로 `ATI`, `0100` 응답을 확인한다. BLE MAC만 있고 UUID가 없으면 `missing RX/TX UUID`로 실패하므로, 이 상태에서는 BLE characteristic을 먼저 확인해야 한다.
 
-실차 baseline 증거 수집:
+실차 CAN/OBD 증거 수집은 Windows 레이아웃 에디터가 우선 경로다. 에디터의 `Connection` 탭에서 OBD BLE와 CANable USB/SLCAN을 연결하고, `Simulation`을 켜면 live 값이 같은 Pi `HudRenderer` preview에 transient override로 들어간다. 이 값은 저장 파일을 dirty로 만들지 않으며, `Copy Live Sample`을 누른 경우에만 현재 live sample이 layout `dummy_data`에 기록된다. CAN 후보 ID, changing byte, sample payload, decoded preview, `confirmed:true` profile signal 작성은 `CAN Analysis` 탭에서 한다. OBD adapter identity, protocol, supported PID bitmap, DTC, probe command 관리는 `OBD Analysis` 탭에서 한다.
+
+Pi 쪽 `collect-vehicle-baseline.py`는 이제 OBD 증거만 수집하는 유지보수용 fallback이다. CAN frame 수집, ID별 빈도, changing byte 분석은 Pi에서 하지 않고 Windows 에디터의 `CAN Analysis` 탭에서 한다.
 
 ```bash
 /opt/headunit-pi-hud/.venv/bin/python /opt/headunit-pi-hud/pi-hud/scripts/collect-vehicle-baseline.py \
-  --can-duration 30 \
   --output /tmp/avante-hd-baseline.json
 ```
 
-이 명령도 `/etc/headunit-pi-hud.env` 또는 `HEADUNIT_HUD_ENV_FILE`을 먼저 읽어서 `HEADUNIT_HUD_OBD_PORT`, `HEADUNIT_HUD_OBD_BAUD`, `HEADUNIT_HUD_OBD_BLE_*`, `HEADUNIT_HUD_CAN_CHANNEL`을 기본값으로 쓴다. 필요하면 `--obd-port`, `--obd-baud`, `--obd-ble-mac`, `--obd-ble-rx-uuid`, `--obd-ble-tx-uuid`, `--can-channel`로 임시 override할 수 있다. iCar/ELM327의 `ATI`, `ATDP`, supported PID bitmap, 표준 PID, DTC raw response와 CANable/SocketCAN frame sample을 JSON으로 저장한다. Serial/rfcomm이 설정되어 있으면 serial transport를 우선하고, serial이 비어 있을 때 BLE MAC이 있으면 BLE transport로 OBD baseline을 수집한다. 기본 표준 PID/DTC 명령 뒤에는 차량 profile의 `obd_probe_commands`가 이어서 실행된다. 아반떼 HD profile에는 `7E0/7E8 21 01`, `21 02`, `21 14`, `7D1/7D9 21 01`, `22 0104`, `7C6/7CE 22 B002` 후보가 들어 있지만 모두 `confirmed:false`이며, HUD 상시 표시값으로 쓰기 전에 raw response와 값 범위를 실차에서 확인해야 한다. 이 파일은 실제 차량/어댑터 응답 증거이므로 repo에는 commit하지 않는다.
-
-CAN frame sample을 수집한 뒤 ID별 빈도와 변하는 byte 위치를 요약하려면:
-
-```bash
-/opt/headunit-pi-hud/.venv/bin/python /opt/headunit-pi-hud/pi-hud/scripts/summarize-can-baseline.py \
-  /tmp/avante-hd-baseline.json \
-  --output /tmp/avante-hd-can-summary.json
-```
-
-요약 파일에는 `frame_count`, `unique_id_count`, ID별 `count`, `dlc`, `changing_byte_indexes`, `sample_data`가 들어간다. 기어 위치, 방향지시등, 브레이크처럼 표준 OBD로 안 잡히는 항목은 조건별 baseline을 여러 개 수집한 뒤 이 요약을 비교해서 후보 CAN ID와 byte를 좁힌다.
+이 명령도 `/etc/headunit-pi-hud.env` 또는 `HEADUNIT_HUD_ENV_FILE`을 먼저 읽어서 `HEADUNIT_HUD_OBD_PORT`, `HEADUNIT_HUD_OBD_BAUD`, `HEADUNIT_HUD_OBD_BLE_*`를 기본값으로 쓴다. 필요하면 `--obd-port`, `--obd-baud`, `--obd-ble-mac`, `--obd-ble-rx-uuid`, `--obd-ble-tx-uuid`로 임시 override할 수 있다. iCar/ELM327의 `ATI`, `ATDP`, supported PID bitmap, 표준 PID, DTC raw response를 JSON으로 저장한다. Serial/rfcomm이 설정되어 있으면 serial transport를 우선하고, serial이 비어 있을 때 BLE MAC이 있으면 BLE transport로 OBD baseline을 수집한다. 기본 표준 PID/DTC 명령 뒤에는 차량 profile의 `obd_probe_commands`가 이어서 실행된다. 아반떼 HD profile에는 `7E0/7E8 21 01`, `21 02`, `21 14`, `7D1/7D9 21 01`, `22 0104`, `7C6/7CE 22 B002` 후보가 들어 있지만 모두 `confirmed:false`이며, HUD 상시 표시값으로 쓰기 전에 Windows 에디터에서 raw response와 값 범위를 실차 확인해야 한다. 이 파일은 실제 차량/어댑터 응답 증거이므로 repo에는 commit하지 않는다.
 
 레이아웃을 Pi에 올리기 전 실제 1920x480 렌더러로 검증:
 
@@ -404,7 +395,7 @@ npm run build
 
 빌드 결과물은 `layout-editor-electron/dist/HeadunitHudLayoutEditor-win32-x64/HeadunitHudLayoutEditor.exe`에 생성된다. 기존 exe가 실행 중이면 Windows가 파일 교체를 막으므로 편집기 창을 닫고 다시 빌드한다.
 
-Electron 에디터는 Python bridge를 통해 Pi 런타임과 같은 `HudRenderer`로 1920x480 preview를 생성한다. 카테고리 탭에서 speed, gear, RPM, 개별 warning icon, navigation text, OBD/CAN 진단값, text label 등을 추가하고, 캔버스에서 위치/크기를 조정하거나 인스펙터에서 font/binding을 수정한 뒤 JSON으로 저장한다. 저장과 `Validate` 버튼은 Pi 렌더러의 non-blank 검증을 수행하며, 저장된 JSON에는 `pi_hud_handoff` 메타데이터가 들어간다. `PNG`는 현재 레이아웃의 full-resolution snapshot을 저장하고, `Field Pack`은 레이아웃, 차량 프로필, warning icon PNG, 환경 예제, preview, manifest를 `headunit-pi-field-pack.zip`으로 묶는다. Pi 런타임은 같은 JSON과 아이콘 자산을 그대로 렌더링한다.
+Electron 에디터는 Python bridge를 통해 Pi 런타임과 같은 `HudRenderer`로 1920x480 preview를 생성한다. 카테고리 탭에서 speed, gear, RPM, 개별 warning icon, navigation text, OBD/CAN 진단값, text label 등을 추가하고, 캔버스에서 위치/크기를 조정하거나 인스펙터에서 font/binding을 수정한 뒤 JSON으로 저장한다. 하단 도구 영역은 `Elements`, `Connection`, `CAN Analysis`, `OBD Analysis` 탭으로 나뉜다. `Connection` 탭은 OBD BLE scan/UUID 검사와 CANable USB/SLCAN 연결을 제공하고, `Simulation` toggle은 live 값을 preview에만 transient로 덮어쓴다. `CAN Analysis` 탭에서 frame summary와 changing byte를 보고 `confirmed:true` CAN signal을 profile에 저장하며, `OBD Analysis` 탭에서 supported PID, DTC, probe command를 관리한다. 저장과 `Validate` 버튼은 Pi 렌더러의 non-blank 검증을 수행하며, 저장된 JSON에는 `pi_hud_handoff` 메타데이터가 들어간다. `PNG`는 현재 레이아웃의 full-resolution snapshot을 저장하고, `Field Pack`은 레이아웃, 차량 프로필, warning icon PNG, 환경 예제, preview, manifest를 `headunit-pi-field-pack.zip`으로 묶는다. Pi 런타임은 같은 JSON과 아이콘 자산을 그대로 렌더링한다.
 
 최신 기본 레이아웃은 `gear_indicator`와 `nav_icon`을 별도 element type으로 쓴다. `gear_indicator`는 `P,R,N,D,3,2,L` 전체를 나열하고 현재 `vehicle.gear_range`만 크게 강조하는 `strip` 스타일과 현재 기어만 표시하는 `active_only` 스타일을 지원한다. `nav_icon`은 localized `nav.instruction` 문자열을 파싱하지 않고 `nav.event_type`, `nav.turn_side` 숫자 필드로 방향 아이콘을 선택한다. `nav.instruction`은 `우회전` 같은 maneuver text만 저장하고, `300 m` 같은 거리는 `nav.distance_meters` 요소에서만 표시한다. 팔레트 버튼은 현재 screen에 이미 들어간 요소를 색상과 체크 표시로 구분하고, 같은 팔레트 요소를 다시 누르면 중복 생성하지 않고 기존 요소를 선택한다. Delete 버튼과 Delete 키는 현재 screen snapshot까지 즉시 동기화한다. `Pick Color`, `Pick Active`, `Pick Accent` 버튼은 color chooser를 열어 `color`, `active_color`, `accent` 값을 바로 반영한다.
 
@@ -421,7 +412,7 @@ Electron 에디터는 Python bridge를 통해 Pi 런타임과 같은 `HudRendere
 ## 아직 확정해야 할 것
 
 - iCar Pro 2S가 Pi에서 Classic Bluetooth SPP로 잡히는지, BLE-only인지 확인하고 BLE-only라면 실제 RX/TX UUID 확인.
-- 아반떼 HD 2010 1.6 AT의 CAN ID별 의미 확정.
-- 기어 위치가 CAN/확장 PID 중 어디서 안정적으로 나오는지 확인.
+- Windows 에디터의 CAN/OBD 분석 탭으로 아반떼 HD 2010 1.6 AT의 CAN ID별 의미 확정.
+- Windows 에디터에서 기어 위치가 CAN/확장 PID 중 어디서 안정적으로 나오는지 확인.
 - ABS/EPS/SRS 같은 모듈별 DTC를 표준 OBD만으로 볼 수 있는지, 제조사 진단 요청이 필요한지 확인.
 - iCar Pro 2S가 실제 차량/Pi에서 serial/rfcomm 또는 BLE로 안정적으로 표준 PID를 응답하는지 확인.

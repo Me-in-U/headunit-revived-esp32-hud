@@ -215,11 +215,11 @@ The Pi runtime tracks navigation freshness separately from backup speed freshnes
 
 ## Raspberry Pi Diagnostic Packets
 
-The production Pi HUD path reads vehicle data locally from iCar/ELM327 and CANable/SocketCAN. Android bridge must send navigation plus backup speed only.
+The production Pi HUD path reads vehicle data locally from iCar/ELM327 and confirmed CANable/SocketCAN mappings. Raw OBD/CAN investigation and live simulation are handled by the Windows Electron layout editor before deploying the layout/profile to the Pi. Android bridge must send navigation plus backup speed only.
 
 The Pi runtime intentionally ignores remote `vehicle_status` packets so UDP traffic cannot replace primary local OBD/CAN vehicle values. The Android bridge target policy is explicit: ESP32 targets may receive navigation, backup speed, and ESP32 settings packets; Raspberry Pi HUD targets may receive only navigation and `type=speed` backup-speed packets. Android must not send `vehicle_status`, `dtc_snapshot`, or `vehicle_debug` packets to any production HUD target.
 
-Debug-only packets are ignored by the Pi runtime by default. They can be accepted on the same UDP port `4210` only when the Pi runtime is started with `--allow-diagnostic-udp` for layout debugging and real-car investigation.
+Debug-only packets are ignored by the Pi runtime by default. They can be accepted on the same UDP port `4210` only when the Pi runtime is started with `--allow-diagnostic-udp` for layout debugging or legacy field diagnostics; the supported CAN/OBD investigation path is the Windows editor.
 
 DTC snapshot:
 
@@ -235,7 +235,7 @@ Vehicle debug:
 {"type":"vehicle_debug","seq":125,"can_frame_count":128,"last_can_id":"0x316","obd_request":"010C","obd_response":"7E8 04 41 0C 1A F8"}
 ```
 
-These fields are optional and map under `debug.*`. They are intended for layout debugging and real-car CAN/OBD investigation, not for Android navigation bridging.
+These fields are optional and map under `debug.*`. They are intended for layout debugging and legacy field diagnostics, not for Android navigation bridging or the supported Windows CAN/OBD analysis workflow.
 
 ## Dual OLED Layout
 

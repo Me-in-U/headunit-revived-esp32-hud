@@ -27,6 +27,18 @@
     };
   }
 
+  function vehicleLiveActionDeps(runtime) {
+    return {
+      markDirty: runtime.markDirty,
+      recordHistory: runtime.recordHistory,
+      renderAll: runtime.renderAll,
+      renderVehicleTools: runtime.renderVehicleTools,
+      schedulePreview: runtime.schedulePreview,
+      setStatus: runtime.setStatus,
+      vehicleLiveState: runtime.vehicleLiveState,
+    };
+  }
+
   function contextCommandDeps(runtime) {
     return {
       applyLanguage: runtime.applyLanguage,
@@ -123,6 +135,7 @@
     fileCommandDeps,
     historyCommandDeps,
     pointerActionDeps,
+    vehicleLiveActionDeps,
     weatherActionDeps,
   };
 

@@ -73,7 +73,6 @@ class InstallScriptsTest(unittest.TestCase):
             "collect-vehicle-baseline.py",
             "first-run-status.py",
             "acceptance-check.py",
-            "summarize-can-baseline.py",
             "scan-ble-obd.py",
             "auto-configure-hardware.py",
             "build-field-pack.py",

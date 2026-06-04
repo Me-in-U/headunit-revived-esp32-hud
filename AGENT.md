@@ -4,7 +4,7 @@
 
 Build a companion HUD system for Headunit Revived without forking Headunit Revived.
 
-The current primary target is a Raspberry Pi 4B driving a 1920x480 HDMI auxiliary display. The Pi must be able to run standalone: it reads vehicle data locally through iCar/ELM327 OBD and CANable/SocketCAN, renders the HUD locally, and treats the Android bridge as an optional navigation input only. When the Android bridge is on the same network, it sends Headunit Revived navigation plus tablet/GPS backup speed to the Pi.
+The current primary target is a Raspberry Pi 4B driving a 1920x480 HDMI auxiliary display. The Pi must be able to run standalone: it reads confirmed runtime vehicle data locally through iCar/ELM327 OBD and CANable/SocketCAN, renders the HUD locally, and treats the Android bridge as an optional navigation input only. Raw OBD/CAN investigation, signal authoring, and live simulation belong in the Windows Electron layout editor before a layout/profile is deployed to the Pi. When the Android bridge is on the same network, it sends Headunit Revived navigation plus tablet/GPS backup speed to the Pi.
 
 The older ESP32 OLED HUD path remains in the repository and should continue to work unless the user explicitly asks to remove or replace it.
 
@@ -13,7 +13,8 @@ The older ESP32 OLED HUD path remains in the repository and should continue to w
 - The tablet runs the GitHub build of Headunit Revived from `C:\Users\Zoe_Lowell\Documents\GitHub\headunit-revived`.
 - The active Headunit Revived build emits `com.andrerinas.headunitrevived.NAVIGATION_UPDATE` broadcasts without signature-only receiver restrictions.
 - Raspberry Pi 4B is the main 1920x480 HUD computer.
-- Pi local vehicle input is iCar/ELM327 for standard OBD PIDs and CANable with candleLight/SocketCAN for raw CAN.
+- Pi local vehicle input is iCar/ELM327 for standard OBD PIDs and CANable with candleLight/SocketCAN for confirmed runtime CAN mappings.
+- Windows Electron editor owns OBD/CAN investigation: BLE ELM327 scan/inspect, CANable USB/SLCAN live connection, CAN/OBD analysis tabs, profile signal editing, and transient simulation preview.
 - Android bridge is optional for the Pi path. If Android is absent or unreachable, the Pi HUD still renders local vehicle data and marks navigation stale/disconnected.
 - Android bridge packets to a Pi target must be limited to navigation and `type=speed` backup speed. ESP32-only settings packets must not be sent to Pi targets.
 - Phone hotspot/tethering may be used as the shared network for Android and Pi. Some hotspots isolate clients; in that case Pi local vehicle data still works but Android navigation UDP may not reach the Pi.
@@ -38,6 +39,8 @@ The older ESP32 OLED HUD path remains in the repository and should continue to w
 - `layout-editor-electron/`: primary Windows Electron layout editor.
   - Shows the actual Pi `HudRenderer` output in the central preview through the Python bridge.
   - Keeps JSON, snapshot export, validation, and field-pack export compatible with the Pi runtime.
+  - Provides live OBD BLE and CANable/SLCAN tooling for Windows-side simulation and CAN/OBD analysis.
+  - Keeps live simulation values transient unless the user explicitly copies the current sample into layout `dummy_data`.
 - `layouts/`: Shared 1920x480 HUD layout JSON files.
 - `vehicles/`: Vehicle profile JSON files for future vehicle expansion.
 - `esp32-hud/`: PlatformIO ESP32-S3 firmware for the legacy dual-OLED HUD.
@@ -139,6 +142,7 @@ Raspberry Pi HUD targets manage layout/settings locally through JSON layout file
 - Prefer simple, testable pure Kotlin for Android packet formatting and maneuver mapping.
 - Keep Android service/network code separate from packet formatting.
 - Keep Pi runtime data sources (`OBD`, `CAN`, `bridge`, `dummy`) separated so each can be tested independently.
+- Keep raw OBD/CAN analysis tools in the Windows editor; Pi runtime should consume deployed profiles and decode only confirmed `can_signals`.
 - Keep layout JSON as the shared contract between `layout-editor-electron/` and `pi-hud/`; renderer-visible changes need tests or layout verification.
 - Keep vehicle-specific confirmed facts in `vehicles/*.json`, default layout `vehicles`, and vehicle docs synchronized.
 - Android must not send ESP32 settings packets to Pi targets.

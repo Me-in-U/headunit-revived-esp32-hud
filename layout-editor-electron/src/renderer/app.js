@@ -1,18 +1,16 @@
 const AppRuntime = window.EditorAppRuntime;
+const BrowserRefs = window.EditorBrowserRefs;
 const Modules = AppRuntime.collectWindowModules(window);
 
 const state = Modules.appState.createInitialState(Modules.i18n, localStorage);
 const dom = Modules.appState.createEditorDom();
-const refs = {
-  clearTimeoutRef: clearTimeout,
+const refs = BrowserRefs.createBrowserRefs({
   documentRef: document,
   dom,
   localStorageRef: localStorage,
   navigatorRef: navigator,
-  requestAnimationFrameRef: requestAnimationFrame,
-  setTimeoutRef: setTimeout,
   windowRef: window,
-};
+});
 const handlers = Modules.appHandlers.createAppHandlers({
   state,
   dom,

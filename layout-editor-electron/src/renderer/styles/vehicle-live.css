@@ -1,0 +1,397 @@
+.toggle-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  color: var(--soft);
+}
+
+.tool-tabs {
+  display: flex;
+  flex: 0 0 auto;
+  gap: 6px;
+  overflow-x: auto;
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--line);
+}
+
+.tool-tab {
+  min-height: 30px;
+  white-space: nowrap;
+  border: 1px solid transparent;
+  border-radius: 7px;
+  background: transparent;
+  color: var(--muted);
+  padding: 0 10px;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.tool-tab.active {
+  border-color: rgba(36, 211, 107, 0.52);
+  background: rgba(36, 211, 107, 0.12);
+  color: #d8ffe5;
+}
+
+.tool-panel {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: auto;
+}
+
+.vehicle-tool-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 12px;
+}
+
+.vehicle-tool-panel[hidden] {
+  display: none;
+}
+
+.connection-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 7fr) minmax(0, 3fr);
+  gap: 12px;
+  align-items: start;
+  min-width: 0;
+}
+
+.can-analysis-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 7fr) minmax(0, 3fr);
+  gap: 12px;
+  align-items: start;
+  min-width: 0;
+}
+
+.can-analysis-main {
+  display: grid;
+  gap: 12px;
+  min-width: 0;
+}
+
+.connection-grid,
+.connection-card,
+.profile-editor,
+.sample-row,
+.analysis-metrics,
+.obd-debug,
+.live-log-panel {
+  display: grid;
+  gap: 9px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #101822;
+  padding: 10px;
+}
+
+.connection-card {
+  gap: 12px;
+}
+
+.live-log-panel {
+  align-self: start;
+  gap: 10px;
+  min-width: 0;
+}
+
+.section-title {
+  display: grid;
+  gap: 9px;
+}
+
+.section-title h3 {
+  margin: 0;
+  color: #d9e8f5;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.panel-help {
+  margin: 0;
+  color: var(--muted);
+  font-size: 11px;
+  line-height: 1.45;
+}
+
+.connection-grid label,
+.profile-editor label,
+.field-grid label:not(.check-row) {
+  display: grid;
+  gap: 5px;
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.connection-grid input,
+.profile-editor input,
+.field-grid input {
+  width: 100%;
+}
+
+.field-grid {
+  display: grid;
+  gap: 9px;
+}
+
+.input-field {
+  min-width: 0;
+}
+
+.check-row {
+  width: fit-content;
+  display: inline-flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 8px;
+  color: var(--soft);
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+.check-row input[type="checkbox"],
+.toggle-label input[type="checkbox"] {
+  flex: 0 0 auto;
+  width: 15px;
+  height: 15px;
+  margin: 0;
+  accent-color: var(--accent);
+}
+
+.section-title > .inline-button,
+.profile-editor > .inline-button,
+.obd-profile-editor > .inline-button {
+  justify-self: stretch;
+  width: 100%;
+}
+
+.selection-status {
+  min-height: 30px;
+  display: flex;
+  align-items: center;
+  border: 1px solid rgba(64, 167, 255, 0.3);
+  border-radius: 7px;
+  background: rgba(64, 167, 255, 0.08);
+  color: #d7ecff;
+  padding: 7px 9px;
+  font-size: 12px;
+  line-height: 1.35;
+}
+
+.obd-device-list,
+.com-port-list {
+  display: grid;
+  gap: 7px;
+  min-height: 46px;
+  max-height: 150px;
+  overflow: auto;
+}
+
+.obd-device-row,
+.com-port-row {
+  width: 100%;
+  min-height: 36px;
+  border: 1px solid rgba(132, 146, 160, 0.24);
+  border-radius: 7px;
+  background: rgba(9, 13, 18, 0.64);
+  color: var(--soft);
+  padding: 7px 9px;
+  text-align: left;
+  font-size: 12px;
+  line-height: 1.35;
+  overflow-wrap: anywhere;
+}
+
+.obd-device-row:hover,
+.obd-device-row.selected,
+.com-port-row:hover,
+.com-port-row.selected {
+  border-color: rgba(36, 211, 107, 0.5);
+  background: rgba(36, 211, 107, 0.1);
+  color: #d8ffe5;
+}
+
+.advanced-settings {
+  border: 1px solid rgba(132, 146, 160, 0.2);
+  border-radius: 7px;
+  background: rgba(9, 13, 18, 0.42);
+  padding: 8px;
+}
+
+.advanced-settings summary {
+  cursor: pointer;
+  color: var(--soft);
+  font-size: 12px;
+  font-weight: 750;
+}
+
+.advanced-settings .field-grid {
+  margin-top: 9px;
+}
+
+.button-row {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.sample-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 8px;
+}
+
+.live-sample-row {
+  background: rgba(9, 13, 18, 0.42);
+}
+
+.sample-row .inline-button,
+.button-row .inline-button {
+  min-width: 0;
+}
+
+.connection-status {
+  min-height: 30px;
+  border: 1px solid rgba(132, 146, 160, 0.24);
+  border-radius: 7px;
+  color: var(--soft);
+  padding: 7px 9px;
+  font-size: 12px;
+  line-height: 1.35;
+  overflow-wrap: anywhere;
+}
+
+.connection-status[data-state="live"] {
+  border-color: rgba(36, 211, 107, 0.5);
+  color: #d8ffe5;
+}
+
+.connection-status[data-state="error"] {
+  border-color: rgba(255, 93, 93, 0.52);
+  color: #ffc6c6;
+}
+
+.live-status-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  min-width: 0;
+}
+
+.live-status-item {
+  min-width: 0;
+  border: 1px solid rgba(132, 146, 160, 0.24);
+  border-radius: 7px;
+  background: rgba(9, 13, 18, 0.54);
+  padding: 7px 9px;
+}
+
+.live-status-item span {
+  display: block;
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.live-status-item strong {
+  display: block;
+  margin-top: 5px;
+  color: var(--soft);
+  font-size: 12px;
+  line-height: 1.35;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.live-status-item strong[data-state="live"] {
+  color: #d8ffe5;
+}
+
+.live-status-item strong[data-state="error"] {
+  color: #ffc6c6;
+}
+
+.analysis-metrics,
+.obd-debug {
+  grid-template-columns: 1fr 1fr;
+}
+
+.analysis-metrics span,
+.obd-debug span {
+  display: block;
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.analysis-metrics strong,
+.obd-debug strong {
+  display: block;
+  margin-top: 5px;
+  color: var(--text);
+  font-size: 15px;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.vehicle-tool-panel h3 {
+  margin: 0;
+  color: #d9e8f5;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.analysis-list {
+  display: grid;
+  gap: 6px;
+  max-height: 180px;
+  overflow: auto;
+}
+
+.live-log-list {
+  display: grid;
+  gap: 6px;
+  max-height: 360px;
+  overflow: auto;
+}
+
+.analysis-row {
+  border: 1px solid rgba(132, 146, 160, 0.2);
+  border-radius: 7px;
+  background: rgba(9, 13, 18, 0.64);
+  color: var(--soft);
+  padding: 7px 9px;
+  font-family: Consolas, "Cascadia Mono", monospace;
+  font-size: 11px;
+  line-height: 1.35;
+}
+
+.decoded-preview {
+  min-height: 90px;
+  max-height: 180px;
+  overflow: auto;
+  border: 1px solid rgba(132, 146, 160, 0.2);
+  border-radius: 7px;
+  background: rgba(9, 13, 18, 0.72);
+  color: var(--soft);
+  padding: 9px;
+  font-family: Consolas, "Cascadia Mono", monospace;
+  font-size: 11px;
+}
+
+@media (max-width: 900px) {
+  .connection-layout,
+  .can-analysis-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .live-status-grid {
+    grid-template-columns: 1fr;
+  }
+}

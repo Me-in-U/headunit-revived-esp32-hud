@@ -14,8 +14,8 @@ ROOT_DIR = PI_DIR.parent
 if str(PI_DIR) not in sys.path:
     sys.path.insert(0, str(PI_DIR))
 
-from hud_pi.diagnostics import compact_response, load_env_file, open_socketcan_bus, run_ble_elm_commands, send_elm_command
-from hud_pi.vehicle_baseline import OBD_BASELINE_COMMANDS, build_obd_baseline_commands, collect_can_frames, collect_obd_baseline, response_ok
+from hud_pi.diagnostics import compact_response, load_env_file, run_ble_elm_commands, send_elm_command
+from hud_pi.vehicle_baseline import OBD_BASELINE_COMMANDS, build_obd_baseline_commands, collect_obd_baseline, response_ok
 
 
 def default_env_file_path() -> str:
@@ -39,20 +39,16 @@ def default_vehicle_profile_path() -> str:
 
 
 def build_parser() -> argparse.ArgumentParser:
-    parser = argparse.ArgumentParser(description="Collect first-run OBD and CAN evidence for the Raspberry Pi HUD")
+    parser = argparse.ArgumentParser(description="Collect first-run OBD evidence for the Raspberry Pi HUD")
     parser.add_argument("--obd-port", default=os.environ.get("HEADUNIT_HUD_OBD_PORT", ""))
     parser.add_argument("--obd-baud", type=int, default=int(os.environ.get("HEADUNIT_HUD_OBD_BAUD", "38400")))
     parser.add_argument("--obd-timeout", type=float, default=2.0)
     parser.add_argument("--obd-ble-mac", default=os.environ.get("HEADUNIT_HUD_OBD_BLE_MAC", ""))
     parser.add_argument("--obd-ble-rx-uuid", default=os.environ.get("HEADUNIT_HUD_OBD_BLE_RX_UUID", ""))
     parser.add_argument("--obd-ble-tx-uuid", default=os.environ.get("HEADUNIT_HUD_OBD_BLE_TX_UUID", ""))
-    parser.add_argument("--can-channel", default=os.environ.get("HEADUNIT_HUD_CAN_CHANNEL", ""))
-    parser.add_argument("--can-duration", type=float, default=10.0)
-    parser.add_argument("--can-max-frames", type=int, default=500)
     parser.add_argument("--vehicle-profile", default=os.environ.get("HEADUNIT_HUD_VEHICLE_PROFILE", default_vehicle_profile_path()))
     parser.add_argument("--output", default=default_output_path())
     parser.add_argument("--skip-obd", action="store_true")
-    parser.add_argument("--skip-can", action="store_true")
     return parser
 
 
@@ -140,37 +136,6 @@ def collect_obd(args: argparse.Namespace, commands: list[str] | tuple[str, ...] 
     }
 
 
-def collect_can(args: argparse.Namespace) -> dict[str, Any]:
-    if args.skip_can or not args.can_channel:
-        return {"configured": False, "records": [], "error": "skipped"}
-    try:
-        import can
-    except ImportError:
-        return {"configured": True, "channel": args.can_channel, "records": [], "error": "python-can-missing"}
-
-    try:
-        bus = open_socketcan_bus(can, args.can_channel)
-    except Exception as exc:
-        return {"configured": True, "channel": args.can_channel, "records": [], "error": exc.__class__.__name__}
-
-    try:
-        records = collect_can_frames(bus.recv, duration_seconds=args.can_duration, max_frames=args.can_max_frames)
-    except Exception as exc:
-        return {"configured": True, "channel": args.can_channel, "records": [], "error": exc.__class__.__name__}
-    finally:
-        shutdown = getattr(bus, "shutdown", None)
-        if callable(shutdown):
-            shutdown()
-
-    return {
-        "configured": True,
-        "channel": args.can_channel,
-        "duration_seconds": args.can_duration,
-        "max_frames": args.can_max_frames,
-        "records": records,
-    }
-
-
 def build_report(args: argparse.Namespace) -> dict[str, Any]:
     profile = load_vehicle_profile(args.vehicle_profile)
     obd_commands = build_obd_baseline_commands(profile)
@@ -180,13 +145,12 @@ def build_report(args: argparse.Namespace) -> dict[str, Any]:
         "vehicle": profile.get("id", "avante_hd_2010_1_6_at"),
         "notes": {
             "dlc_pins": [16, 15, 14, 12, 8, 6, 5, 4, 3],
-            "can_pins": {"high": 6, "low": 14, "ground": "4/5"},
             "android_role": "navigation_and_backup_speed_only",
             "vehicle_profile": args.vehicle_profile,
             "obd_command_count": len(obd_commands),
+            "can_analysis": "Use the Windows editor CAN Analysis tab before deploying confirmed can_signals.",
         },
         "obd": collect_obd(args, obd_commands),
-        "can": collect_can(args),
     }
 
 

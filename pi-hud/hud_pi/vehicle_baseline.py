@@ -1,10 +1,5 @@
 from __future__ import annotations
 
-from .vehicle_baseline_can import (
-    can_message_to_record,
-    collect_can_frames,
-    summarize_can_records,
-)
 from .vehicle_baseline_obd import (
     OBD_BASELINE_COMMANDS,
     build_obd_baseline_commands,
@@ -17,10 +12,7 @@ from .vehicle_baseline_obd import (
 __all__ = [
     "OBD_BASELINE_COMMANDS",
     "build_obd_baseline_commands",
-    "can_message_to_record",
-    "collect_can_frames",
     "collect_obd_baseline",
     "profile_obd_probe_commands",
     "response_ok",
-    "summarize_can_records",
 ]

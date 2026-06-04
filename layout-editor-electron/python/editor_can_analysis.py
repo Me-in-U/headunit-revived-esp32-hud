@@ -1,7 +1,5 @@
 from __future__ import annotations
 
-import time
-from collections.abc import Callable
 from typing import Any
 
 
@@ -16,25 +14,6 @@ def can_message_to_record(message: Any) -> dict[str, Any]:
         "dlc": int(getattr(message, "dlc", len(data))),
         "data": " ".join(f"{byte:02X}" for byte in data),
     }
-
-
-def collect_can_frames(
-    recv: Callable[[float], Any],
-    duration_seconds: float = 10.0,
-    max_frames: int = 500,
-    now: Callable[[], float] = time.monotonic,
-) -> list[dict[str, Any]]:
-    records: list[dict[str, Any]] = []
-    deadline = now() + max(0.0, duration_seconds)
-    while len(records) < max(0, max_frames) and now() <= deadline:
-        remaining = max(0.0, deadline - now())
-        message = recv(min(0.5, remaining))
-        if message is None:
-            if remaining <= 0:
-                break
-            continue
-        records.append(can_message_to_record(message))
-    return records
 
 
 def summarize_can_records(records: list[dict[str, Any]], sample_limit: int = 3) -> dict[str, Any]:

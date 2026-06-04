@@ -16,6 +16,7 @@
       topControls: runtime.topControls,
       translate: runtime.translate,
       updateFilePath: runtime.updateFilePath,
+      vehicleLiveView: runtime.vehicleLiveView,
       viewModel: runtime.viewModel,
     };
   }
@@ -25,6 +26,7 @@
       hideDragGhost: () => runtime.pointerActions.hideDragGhost(runtime.dom),
       renderOverlay: runtime.renderOverlay,
       renderPreview: (request) => runtime.windowRef.hudEditor.renderPreview(request),
+      previewStateOverride: (state) => runtime.vehicleLiveState.previewStateOverride(state),
       requestAnimationFrame: runtime.requestAnimationFrameRef,
       schedulePreview: runtime.schedulePreview,
       setStatus: runtime.setStatus,

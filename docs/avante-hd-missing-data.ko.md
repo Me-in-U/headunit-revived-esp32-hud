@@ -101,7 +101,7 @@ ATCRA7CE
 22B002
 ```
 
-Pi baseline collector는 위 후보를 `vehicles/avante_hd_2010_1_6_at.json`의 `obd_probe_commands`에서 읽어 표준 PID/DTC 명령 뒤에 자동으로 붙인다. 후보는 모두 `confirmed:false`이므로 응답이 있어도 바로 HUD 표시값으로 승격하지 말고, raw response, 표준 PID, 계기판/진단 앱 값과 비교해서 formula를 확정해야 한다.
+Windows 레이아웃 에디터의 `OBD Analysis` 탭은 위 후보를 `vehicles/avante_hd_2010_1_6_at.json`의 `obd_probe_commands`에서 읽어 probe command로 다룬다. Pi OBD baseline collector도 같은 후보를 fallback으로 실행할 수 있다. 후보는 모두 `confirmed:false`이므로 응답이 있어도 바로 HUD 표시값으로 승격하지 말고, raw response, 표준 PID, 계기판/진단 앱 값과 비교해서 formula를 확정해야 한다.
 
 ### CANable
 
@@ -131,17 +131,15 @@ mode -> listen-only
 | `door_trunk.log` | 도어/트렁크 열고 닫기 |
 | `warning_self_test.log` | IGN ON self-test, engine start, 각 경고등 소등 과정 |
 
-Pi에 장착한 상태에서는 첫 로그 전에 baseline JSON도 남긴다.
+Pi에 장착한 상태에서는 필요하면 OBD baseline JSON만 남긴다. CAN frame 수집과 ID/byte 분석은 Windows 레이아웃 에디터의 `CAN Analysis` 탭에서 진행한다.
 
 ```bash
 python pi-hud/scripts/collect-vehicle-baseline.py \
   --obd-port /dev/rfcomm0 \
-  --can-channel can0 \
-  --can-duration 30 \
   --output /tmp/avante-hd-baseline.json
 ```
 
-이 파일에는 iCar/ELM327 초기 정보, supported PID bitmap, 표준 PID/DTC raw response, CAN frame sample이 같이 들어간다. VIN 또는 차량 상태가 섞일 수 있으므로 `vehicle-baseline/` 같은 로컬 폴더에 보관하고 그대로 commit하지 않는다.
+이 파일에는 iCar/ELM327 초기 정보, supported PID bitmap, 표준 PID/DTC raw response가 들어간다. VIN 또는 차량 상태가 섞일 수 있으므로 `vehicle-baseline/` 같은 로컬 폴더에 보관하고 그대로 commit하지 않는다.
 
 ## 앱/프로토콜 현재 상태
 

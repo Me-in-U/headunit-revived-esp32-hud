@@ -33,3 +33,30 @@ test("Python editor preview renderer returns PNG bytes outside the bridge runtim
   assert.equal(result.status, 0, result.stderr);
   assert.equal(Number.parseInt(result.stdout, 10) > 100, true);
 });
+
+test("Python editor preview renderer can use transient live state overrides", () => {
+  const script = [
+    "from editor_preview import render_preview_png",
+    "layout = {",
+    "    'canvas': {'width': 320, 'height': 120, 'background': '#000000'},",
+    "    'dummy_data': {'vehicle': {'speed_kmh': 42}},",
+    "    'elements': [",
+    "        {'id': 'speed', 'type': 'value', 'binding': 'vehicle.speed_kmh', 'x': 20, 'y': 20, 'w': 160, 'h': 50, 'font_size': 32},",
+    "    ],",
+    "}",
+    "baseline = render_preview_png(layout, 320, 120)",
+    "override = render_preview_png(layout, 320, 120, {'vehicle': {'speed_kmh': 99}})",
+    "assert baseline.startswith(b'\\x89PNG\\r\\n\\x1a\\n')",
+    "assert override.startswith(b'\\x89PNG\\r\\n\\x1a\\n')",
+    "assert baseline != override",
+    "assert layout['dummy_data']['vehicle']['speed_kmh'] == 42",
+    "print(len(override))",
+  ].join("\n");
+  const result = spawnSync(pythonExecutable(), ["-c", script], {
+    cwd: path.resolve(__dirname, "..", "python"),
+    encoding: "utf8",
+  });
+
+  assert.equal(result.status, 0, result.stderr);
+  assert.equal(Number.parseInt(result.stdout, 10) > 100, true);
+});

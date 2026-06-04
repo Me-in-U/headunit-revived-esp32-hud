@@ -9,6 +9,7 @@ const expectedImports = [
   "./styles/base.css",
   "./styles/shell.css",
   "./styles/palette.css",
+  "./styles/vehicle-live.css",
   "./styles/canvas.css",
   "./styles/inspector.css",
 ];
@@ -25,7 +26,18 @@ test("feature css modules exist and own their expected selectors", () => {
     "base.css": [":root", "body", "button"],
     "shell.css": [".app-shell", ".topbar", ".workspace"],
     "palette.css": [".category-tabs", ".palette-list", ".variant-segment"],
-    "canvas.css": [".canvas-panel", ".preview-stage", ".element-hitbox"],
+    "vehicle-live.css": [
+      ".tool-tabs",
+      ".tool-panel",
+      ".connection-layout",
+      ".can-analysis-layout",
+      ".live-log-panel",
+      ".obd-device-list",
+      ".com-port-list",
+      ".advanced-settings",
+      ".analysis-list",
+    ],
+    "canvas.css": [".canvas-panel", ".preview-frame", ".preview-stage", ".element-hitbox"],
     "inspector.css": [".property-grid", ".validation-drawer", ".layer-row"],
   };
 
@@ -38,4 +50,23 @@ test("feature css modules exist and own their expected selectors", () => {
       assert.equal(content.includes(selector), true, `${fileName} should include ${selector}`);
     }
   }
+});
+
+test("vehicle live controls use left-aligned rows instead of split floating controls", () => {
+  const content = fs.readFileSync(path.join(rendererDir, "styles", "vehicle-live.css"), "utf8");
+
+  assert.match(content, /\.section-title\s*{[^}]*display:\s*grid;/s);
+  assert.match(content, /\.check-row\s*{[^}]*justify-content:\s*flex-start;/s);
+  assert.match(content, /\.check-row\s*{[^}]*width:\s*fit-content;/s);
+  assert.match(content, /\.button-row\s*{[^}]*justify-content:\s*flex-start;/s);
+  assert.doesNotMatch(content, /\.button-row\s*{[^}]*justify-content:\s*space-between;/s);
+});
+
+test("connection and CAN analysis panels keep a 7:3 two-column desktop structure", () => {
+  const content = fs.readFileSync(path.join(rendererDir, "styles", "vehicle-live.css"), "utf8");
+
+  assert.match(content, /\.connection-layout\s*{[^}]*display:\s*grid;[^}]*grid-template-columns:\s*minmax\(0,\s*7fr\)\s+minmax\(0,\s*3fr\);/s);
+  assert.match(content, /\.can-analysis-layout\s*{[^}]*display:\s*grid;[^}]*grid-template-columns:\s*minmax\(0,\s*7fr\)\s+minmax\(0,\s*3fr\);/s);
+  assert.match(content, /\.live-log-panel\s*{[^}]*display:\s*grid;/s);
+  assert.match(content, /@media\s*\(max-width:\s*900px\)[\s\S]*\.connection-layout,[\s\S]*\.can-analysis-layout\s*{[^}]*grid-template-columns:\s*1fr;/s);
 });

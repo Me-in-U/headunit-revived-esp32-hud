@@ -12,6 +12,9 @@
     deps.applyLoadedLayout(loaded);
     deps.renderAll();
     await deps.renderPreview();
+    if (deps.hudEditor.onVehicleLiveEvent) {
+      state.vehicleLive.unsubscribe = deps.hudEditor.onVehicleLiveEvent(deps.handlers.onVehicleLiveEvent);
+    }
   }
 
   const api = {

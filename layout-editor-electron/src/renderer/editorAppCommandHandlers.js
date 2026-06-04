@@ -44,6 +44,76 @@
       await modules.weatherActions.fetchWeatherCommand(state, hudEditor(), refs.navigatorRef, deps("weatherActionDeps"));
     }
 
+    function onSimulationToggle() {
+      modules.vehicleLiveActions.onSimulationToggleCommand(state, dom.simulationToggle.checked, deps("vehicleLiveActionDeps"));
+    }
+
+    function selectToolTab(tab) {
+      modules.vehicleLiveActions.selectToolTabCommand(state, tab, deps("vehicleLiveActionDeps"));
+    }
+
+    async function scanObdBle() {
+      await modules.vehicleLiveActions.scanObdBleCommand(state, hudEditor(), deps("vehicleLiveActionDeps"));
+    }
+
+    async function scanComPorts() {
+      await modules.vehicleLiveActions.scanComPortsCommand(state, hudEditor(), deps("vehicleLiveActionDeps"));
+    }
+
+    function selectComPort(device) {
+      modules.vehicleLiveActions.selectComPortCommand(state, device, dom, deps("vehicleLiveActionDeps"));
+    }
+
+    async function selectObdDevice(address) {
+      await modules.vehicleLiveActions.selectObdDeviceAndConnectCommand(state, hudEditor(), address, dom, deps("vehicleLiveActionDeps"));
+    }
+
+    async function inspectObdBle() {
+      await modules.vehicleLiveActions.inspectObdBleCommand(state, hudEditor(), dom.obdBleMac.value.trim(), deps("vehicleLiveActionDeps"));
+    }
+
+    async function startVehicleLive() {
+      await modules.vehicleLiveActions.startVehicleLiveCommand(
+        state,
+        hudEditor(),
+        modules.vehicleLiveActions.buildVehicleLiveConfig(state, dom),
+        deps("vehicleLiveActionDeps")
+      );
+    }
+
+    async function stopVehicleLive() {
+      await modules.vehicleLiveActions.stopVehicleLiveCommand(state, hudEditor(), deps("vehicleLiveActionDeps"));
+    }
+
+    function onVehicleLiveEvent(event) {
+      modules.vehicleLiveActions.handleVehicleLiveEventCommand(state, event, deps("vehicleLiveActionDeps"));
+    }
+
+    function copyLiveSample() {
+      modules.vehicleLiveActions.copyLiveSampleCommand(state, deps("vehicleLiveActionDeps"));
+    }
+
+    function saveCanSignal() {
+      modules.vehicleLiveActions.saveCanSignalCommand(
+        state,
+        {
+          frame_id: dom.canSignalFrameId.value.trim(),
+          name: dom.canSignalName.value.trim(),
+          start_byte: dom.canSignalStartByte.value,
+          start_bit: dom.canSignalStartBit.value,
+          bit_length: dom.canSignalBitLength.value,
+          length: dom.canSignalLength.value,
+          scale: dom.canSignalScale.value,
+          offset: dom.canSignalOffset.value,
+        },
+        deps("vehicleLiveActionDeps")
+      );
+    }
+
+    function addObdProbeCommand() {
+      modules.vehicleLiveActions.addObdProbeCommand(state, dom.obdProbeCommand.value, deps("vehicleLiveActionDeps"));
+    }
+
     function onVehicleChange() {
       modules.contextCommands.applyVehicleCommand(state, dom.vehicleSelect.value, deps("contextCommandDeps"));
     }
@@ -134,11 +204,14 @@
       exportFieldPack,
       exportSnapshot,
       fetchWeather,
+      addObdProbeCommand,
       importOtherScreen,
       markDirty,
       onBackgroundColor,
       onKeyDown,
       onLanguageChange,
+      onSimulationToggle,
+      onVehicleLiveEvent,
       onPointerDown,
       onPointerMove,
       onPointerUp,
@@ -151,6 +224,14 @@
       redo,
       resetDefaultLayout,
       saveLayout,
+      saveCanSignal,
+      scanComPorts,
+      scanObdBle,
+      selectComPort,
+      selectObdDevice,
+      selectToolTab,
+      startVehicleLive,
+      stopVehicleLive,
       snapshotState,
       undo,
       validateLayout,

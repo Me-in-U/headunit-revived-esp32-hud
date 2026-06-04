@@ -4,7 +4,7 @@
 
 Companion HUD stack for showing Headunit Revived navigation guidance on a separate display.
 
-This project is an experimental companion stack. It does not fork Headunit Revived. The current primary target is a Raspberry Pi 4B with a 1920x480 HDMI auxiliary display. The Pi reads local vehicle data through iCar/ELM327 OBD and CANable/SocketCAN, renders the HUD locally, and optionally receives Android bridge navigation plus tablet/GPS backup speed when both devices are on the same network.
+This project is an experimental companion stack. It does not fork Headunit Revived. The current primary target is a Raspberry Pi 4B with a 1920x480 HDMI auxiliary display. The Pi reads confirmed runtime vehicle data through iCar/ELM327 OBD and CANable/SocketCAN, renders the HUD locally, and optionally receives Android bridge navigation plus tablet/GPS backup speed when both devices are on the same network. Raw OBD/CAN investigation and live simulation are handled in the Windows Electron layout editor before deployment.
 
 The older ESP32 dual-OLED HUD path remains in the repository and still supports BLE provisioning plus UDP packet rendering.
 
@@ -15,7 +15,7 @@ The older ESP32 dual-OLED HUD path remains in the repository and still supports 
 - Android target: a tablet running Headunit Revived and this bridge app. On the Pi path it sends navigation and backup speed only.
 - Layout: a Windows layout editor saves 1920x480 JSON layouts that the Pi renders directly. Value elements such as speed and RPM support digital, bar, analog, needle, and sport gauge styles with configurable maximum values.
 - Legacy target: ESP32-S3-N16R8 with two 128x64 I2C OLEDs.
-- Transport: local OBD/CAN on Pi, UDP for optional Android navigation, and BLE only for ESP32 first-run Wi-Fi provisioning.
+- Transport: local runtime OBD/CAN on Pi, Windows OBD BLE/CANable SLCAN for analysis and simulation, UDP for optional Android navigation, and BLE only for ESP32 first-run Wi-Fi provisioning.
 - Stability: active prototype. Packet fields are additive and should remain backward compatible.
 
 ## Repository Layout
@@ -26,7 +26,7 @@ The older ESP32 dual-OLED HUD path remains in the repository and still supports 
 | `bridge-core/` | Pure Kotlin packet, state, timing, and mapping logic with unit tests. |
 | `esp32-hud/` | PlatformIO firmware for ESP32-S3, BLE provisioning, Wi-Fi reconnect, UDP discovery, packet parsing, and OLED rendering. |
 | `pi-hud/` | Raspberry Pi 4B 1920x480 pygame HUD runtime that merges local OBD/CAN with optional Android navigation UDP. |
-| `layout-editor-electron/` | Modern Electron layout editor for the shared 1920x480 HUD JSON. It reuses the Pi pygame renderer for accurate previews. |
+| `layout-editor-electron/` | Modern Electron layout editor for the shared 1920x480 HUD JSON. It reuses the Pi pygame renderer for accurate previews and provides Windows OBD/CAN connection, simulation, and analysis tools. |
 | `layouts/` | Shared Pi HUD layout JSON files. |
 | `vehicles/` | Vehicle profile JSON files for future vehicle expansion. |
 | `docs/setup.md` | Setup guide for Android, ESP32, OLED wiring, and network troubleshooting. |
@@ -35,12 +35,13 @@ The older ESP32 dual-OLED HUD path remains in the repository and still supports 
 ## How It Works
 
 1. Pi opens the 1920x480 HDMI display and renders the selected layout JSON.
-2. Pi reads standard OBD PIDs through iCar/ELM327 and raw CAN through CANable/SocketCAN.
-3. Pi answers Android bridge discovery on UDP port `4211` with `device_kind=pi_hud`.
-4. Headunit Revived emits navigation broadcasts on the tablet.
-5. The bridge app maps those broadcasts into compact JSON HUD packets.
-6. For Pi targets, the bridge sends navigation packets and `type=speed` backup speed only.
-7. Pi receives UDP packets on port `4210`, ignores stale sequence numbers, and merges optional navigation with local vehicle data.
+2. Windows editor can connect to OBD BLE and CANable USB/SLCAN to simulate live values, inspect CAN/OBD traffic, and save confirmed profile mappings.
+3. Pi reads standard OBD PIDs and confirmed CAN signals through iCar/ELM327 and CANable/SocketCAN.
+4. Pi answers Android bridge discovery on UDP port `4211` with `device_kind=pi_hud`.
+5. Headunit Revived emits navigation broadcasts on the tablet.
+6. The bridge app maps those broadcasts into compact JSON HUD packets.
+7. For Pi targets, the bridge sends navigation packets and `type=speed` backup speed only.
+8. Pi receives UDP packets on port `4210`, ignores stale sequence numbers, and merges optional navigation with local vehicle data.
 
 HUD packets are fire-and-forget. HUD receivers do not ACK live navigation packets, so delayed return traffic cannot slow down current guidance.
 

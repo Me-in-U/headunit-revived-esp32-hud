@@ -12,4 +12,14 @@ contextBridge.exposeInMainWorld("hudEditor", {
   exportFieldPack: (payload) => ipcRenderer.invoke("layout:export-field-pack", payload),
   fetchWeather: (payload) => ipcRenderer.invoke("weather:fetch-current", payload),
   chooseBackgroundImage: () => ipcRenderer.invoke("asset:choose-background-image"),
+  scanObdBle: (payload) => ipcRenderer.invoke("vehicle:scan-obd-ble", payload),
+  inspectObdBle: (payload) => ipcRenderer.invoke("vehicle:inspect-obd-ble", payload),
+  listComPorts: () => ipcRenderer.invoke("vehicle:list-com-ports"),
+  startVehicleLive: (payload) => ipcRenderer.invoke("vehicle:start-live", payload),
+  stopVehicleLive: () => ipcRenderer.invoke("vehicle:stop-live"),
+  onVehicleLiveEvent: (handler) => {
+    const listener = (_event, payload) => handler(payload);
+    ipcRenderer.on("vehicle-live:event", listener);
+    return () => ipcRenderer.removeListener("vehicle-live:event", listener);
+  },
 });

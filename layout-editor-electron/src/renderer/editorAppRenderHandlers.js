@@ -34,6 +34,10 @@
       modules.renderCoordinator.renderOverlay(state, dom, deps("renderCoordinatorDeps"));
     }
 
+    function renderVehicleTools() {
+      modules.renderCoordinator.renderVehicleTools(state, dom, deps("renderCoordinatorDeps"));
+    }
+
     async function renderPreview() {
       await modules.previewActions.renderPreview(state, dom, deps("previewDeps"));
     }
@@ -53,6 +57,7 @@
       renderPreview,
       renderProperties,
       renderTopControls,
+      renderVehicleTools,
       schedulePreview,
       selectPaletteVariant,
     };

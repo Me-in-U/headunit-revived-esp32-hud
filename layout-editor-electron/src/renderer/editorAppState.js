@@ -15,6 +15,24 @@
       drag: null,
       paletteQuery: "",
       validationMessages: [],
+      simulationEnabled: false,
+      vehicleLive: globalScope.EditorVehicleLiveState
+        ? globalScope.EditorVehicleLiveState.createVehicleLiveState()
+        : {
+            activeTab: "elements",
+            status: { obd: { state: "idle", detail: "", updatedAt: "" }, can: { state: "idle", detail: "", updatedAt: "" } },
+            mergedState: {},
+            canFrames: [],
+            canSummary: { frame_count: 0, unique_id_count: 0, ids: [] },
+            obdRecords: [],
+            obdDevices: [],
+            selectedObdDevice: null,
+            selectedObdPair: null,
+            obdConnectState: "idle",
+            obdInspection: null,
+            lastError: "",
+            running: false,
+          },
       history: {
         undo: [],
         redo: [],

@@ -215,11 +215,11 @@ Pi runtime은 navigation freshness와 backup speed freshness를 따로 추적하
 
 ## Raspberry Pi Diagnostic Packets
 
-실사용 Pi HUD 경로는 iCar/ELM327와 CANable/SocketCAN에서 차량 데이터를 로컬로 읽습니다. Android bridge는 navigation과 backup speed만 보내야 합니다.
+실사용 Pi HUD 경로는 iCar/ELM327와 CANable/SocketCAN의 확정 mapping에서 차량 데이터를 로컬로 읽습니다. Raw OBD/CAN 조사와 live simulation은 layout/profile을 Pi에 배포하기 전에 Windows Electron 레이아웃 에디터에서 처리합니다. Android bridge는 navigation과 backup speed만 보내야 합니다.
 
 Pi runtime은 remote `vehicle_status` packet을 의도적으로 무시합니다. 따라서 UDP traffic이 Pi 로컬 OBD/CAN 주 차량값을 대체할 수 없습니다. Android bridge target policy는 명시적으로 나뉩니다. ESP32 target은 navigation, backup speed, ESP32 settings packet을 받을 수 있지만 Raspberry Pi HUD target은 navigation과 `type=speed` backup-speed packet만 받을 수 있습니다. Android는 production HUD target으로 `vehicle_status`, `dtc_snapshot`, `vehicle_debug` packet을 보내면 안 됩니다.
 
-Debug-only packet은 Pi runtime 기본값에서는 무시합니다. Layout debugging과 실차 CAN/OBD 조사 때만 Pi runtime을 `--allow-diagnostic-udp`로 실행하면 같은 UDP port `4210`에서 받을 수 있습니다.
+Debug-only packet은 Pi runtime 기본값에서는 무시합니다. Layout debugging이나 legacy field diagnostics가 필요할 때만 Pi runtime을 `--allow-diagnostic-udp`로 실행하면 같은 UDP port `4210`에서 받을 수 있습니다. 지원되는 CAN/OBD 조사 경로는 Windows 에디터입니다.
 
 DTC snapshot:
 
@@ -235,7 +235,7 @@ Vehicle debug:
 {"type":"vehicle_debug","seq":125,"can_frame_count":128,"last_can_id":"0x316","obd_request":"010C","obd_response":"7E8 04 41 0C 1A F8"}
 ```
 
-이 field들은 모두 optional이며 `debug.*` 아래에 들어갑니다. Android navigation bridge용이 아니라 layout debugging과 실차 CAN/OBD 조사용입니다.
+이 field들은 모두 optional이며 `debug.*` 아래에 들어갑니다. Android navigation bridge용이 아니며, 지원되는 Windows CAN/OBD 분석 workflow를 대체하지 않는 layout debugging/legacy diagnostics 용도입니다.
 
 ## Dual OLED Layout
 

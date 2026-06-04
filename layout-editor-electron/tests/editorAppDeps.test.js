@@ -8,9 +8,11 @@ test("editorEventHandlers exposes the complete DOM action handler map", () => {
   const handlers = AppDeps.editorEventHandlers(runtime);
 
   assert.deepEqual(Object.keys(handlers).sort(), [
+    "addObdProbeCommand",
     "bumpZ",
     "chooseBackgroundImage",
     "clearBackgroundImage",
+    "copyLiveSample",
     "deleteSelected",
     "duplicateSelected",
     "exportFieldPack",
@@ -18,6 +20,7 @@ test("editorEventHandlers exposes the complete DOM action handler map", () => {
     "fetchWeather",
     "hideValidationDrawer",
     "importOtherScreen",
+    "inspectObdBle",
     "onBackgroundColor",
     "onKeyDown",
     "onLanguageChange",
@@ -25,13 +28,22 @@ test("editorEventHandlers exposes the complete DOM action handler map", () => {
     "onPointerMove",
     "onPointerUp",
     "onScreenChange",
+    "onSimulationToggle",
     "onVehicleChange",
     "openLayout",
     "redo",
     "renderOverlay",
     "renderPalette",
     "resetDefaultLayout",
+    "saveCanSignal",
     "saveLayout",
+    "scanComPorts",
+    "scanObdBle",
+    "selectComPort",
+    "selectObdDevice",
+    "selectToolTab",
+    "startVehicleLive",
+    "stopVehicleLive",
     "undo",
     "validateLayout",
   ]);
@@ -91,6 +103,8 @@ test("action dependency factories preserve command module contracts", () => {
   assert.equal(AppDeps.commandActionDeps(runtime).keyboardActions, runtime.keyboardActions);
   assert.equal(AppDeps.historyCommandDeps(runtime).history, runtime.history);
   assert.equal(AppDeps.renderCoordinatorDeps(runtime).paletteView, runtime.paletteView);
+  assert.equal(AppDeps.vehicleLiveActionDeps(runtime).vehicleLiveState, runtime.vehicleLiveState);
+  assert.equal(AppDeps.vehicleLiveActionDeps(runtime).renderVehicleTools, runtime.renderVehicleTools);
 });
 
 function runtimeDeps(calls = []) {
@@ -101,6 +115,7 @@ function runtimeDeps(calls = []) {
     applyLanguage: fn("applyLanguage"),
     applyLoadedLayout: fn("applyLoadedLayout"),
     backgroundActions: { name: "backgroundActions" },
+    addObdProbeCommand: fn("addObdProbeCommand"),
     bumpZ: fn("bumpZ"),
     canvasScale: fn("canvasScale"),
     chooseBackgroundImage: fn("chooseBackgroundImage"),
@@ -108,6 +123,7 @@ function runtimeDeps(calls = []) {
     commandActions: { name: "commandActions" },
     confirmDiscardChanges: fn("confirmDiscardChanges"),
     contextActions: { name: "contextActions" },
+    copyLiveSample: fn("copyLiveSample"),
     deleteSelected: fn("deleteSelected"),
     documentRef: { name: "document" },
     dom: { pixelStatus: { textContent: "" } },
@@ -127,6 +143,7 @@ function runtimeDeps(calls = []) {
     history: { name: "history" },
     i18n: { name: "i18n" },
     importOtherScreen: fn("importOtherScreen"),
+    inspectObdBle: fn("inspectObdBle"),
     inspectorView: { name: "inspectorView" },
     keyboardActions: { name: "keyboardActions" },
     layerView: { name: "layerView" },
@@ -136,6 +153,7 @@ function runtimeDeps(calls = []) {
     onBackgroundColor: fn("onBackgroundColor"),
     onKeyDown: fn("onKeyDown"),
     onLanguageChange: fn("onLanguageChange"),
+    onSimulationToggle: fn("onSimulationToggle"),
     onPointerDown: fn("onPointerDown"),
     onPointerMove: fn("onPointerMove"),
     onPointerUp: fn("onPointerUp"),
@@ -158,20 +176,30 @@ function runtimeDeps(calls = []) {
     renderPreview: fn("renderPreview"),
     renderProperties: fn("renderProperties"),
     renderTopControls: fn("renderTopControls"),
+    renderVehicleTools: fn("renderVehicleTools"),
     requestAnimationFrameRef: fn("requestAnimationFrame"),
     resetDefaultLayout: fn("resetDefaultLayout"),
     saveLayout: fn("saveLayout"),
+    saveCanSignal: fn("saveCanSignal"),
     schedulePreview: fn("schedulePreview"),
+    scanComPorts: fn("scanComPorts"),
+    scanObdBle: fn("scanObdBle"),
+    selectComPort: fn("selectComPort"),
+    selectObdDevice: fn("selectObdDevice"),
     selectedElement: fn("selectedElement"),
+    selectToolTab: fn("selectToolTab"),
     selectPaletteVariant: fn("selectPaletteVariant"),
     setStatus: fn("setStatus"),
     showValidationDrawer: fn("showValidationDrawer"),
     snapshotState: fn("snapshotState"),
+    startVehicleLive: fn("startVehicleLive"),
+    stopVehicleLive: fn("stopVehicleLive"),
     topControls: { name: "topControls" },
     translate: (key) => `t:${key}`,
     undo: fn("undo"),
     updateFilePath: fn("updateFilePath"),
     validateLayout: fn("validateLayout"),
+    vehicleLiveState: { name: "vehicleLiveState" },
     viewModel: { name: "viewModel" },
     windowRef: {
       confirm(message) {

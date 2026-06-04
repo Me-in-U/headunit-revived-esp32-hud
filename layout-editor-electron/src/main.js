@@ -2,6 +2,7 @@ const { app, BrowserWindow, dialog, ipcMain, session } = require("electron");
 const fs = require("fs/promises");
 const path = require("path");
 const { spawn } = require("child_process");
+const { pythonExecutable: resolvePythonExecutable } = require("./pythonRuntime");
 const { buildOpenMeteoUrl, chooseBestLocation, normalizeLocation, normalizeWeather } = require("./weather");
 
 app.disableHardwareAcceleration();
@@ -16,7 +17,15 @@ function bridgeScript() {
     : path.join(repoRoot(), "layout-editor-electron", "python", "editor_bridge.py");
 }
 
+function vehicleLiveWorkerScript() {
+  return app.isPackaged
+    ? path.join(app.getAppPath(), "python", "editor_vehicle_live_worker.py")
+    : path.join(repoRoot(), "layout-editor-electron", "python", "editor_vehicle_live_worker.py");
+}
+
 let mainWindow;
+let vehicleLiveWorker = null;
+let vehicleLiveStdoutBuffer = "";
 
 function createWindow() {
   mainWindow = new BrowserWindow({
@@ -37,7 +46,7 @@ function createWindow() {
 }
 
 function pythonExecutable() {
-  return process.env.HEADUNIT_HUD_PYTHON || process.env.PYTHON || "python";
+  return resolvePythonExecutable(repoRoot());
 }
 
 function runBridge(command, payload = {}) {
@@ -78,6 +87,9 @@ function activeWindow() {
 }
 
 ipcMain.handle("app:metadata", () => runBridge("metadata"));
+ipcMain.handle("vehicle:scan-obd-ble", (_event, payload) => runBridge("scan-obd-ble", payload || {}));
+ipcMain.handle("vehicle:inspect-obd-ble", (_event, payload) => runBridge("inspect-obd-ble", payload || {}));
+ipcMain.handle("vehicle:list-com-ports", () => runBridge("list-com-ports"));
 
 ipcMain.handle("layout:load-default", () => runBridge("load-default"));
 
@@ -208,6 +220,94 @@ ipcMain.handle("asset:choose-background-image", async () => {
     dataUrl: `data:${mime};base64,${data.toString("base64")}`,
   };
 });
+
+ipcMain.handle("vehicle:start-live", async (_event, payload) => {
+  stopVehicleLiveWorker();
+  vehicleLiveStdoutBuffer = "";
+  const child = spawn(pythonExecutable(), [vehicleLiveWorkerScript()], {
+    cwd: repoRoot(),
+    stdio: ["pipe", "pipe", "pipe"],
+    windowsHide: true,
+  });
+  let startFailed = false;
+  vehicleLiveWorker = child;
+  child.stdout.setEncoding("utf8");
+  child.stderr.setEncoding("utf8");
+  child.stdout.on("data", handleVehicleLiveStdout);
+  child.stderr.on("data", (chunk) => {
+    sendVehicleLiveEvent({
+      type: "status",
+      source: "can",
+      state: "error",
+      detail: chunk.trim(),
+      updatedAt: new Date().toISOString(),
+    });
+  });
+  child.on("error", (error) => {
+    startFailed = true;
+    if (vehicleLiveWorker === child) {
+      vehicleLiveWorker = null;
+    }
+    const detail = `Worker start failed: ${error.message}`;
+    sendVehicleLiveEvent({ type: "status", source: "can", state: "error", detail, updatedAt: new Date().toISOString() });
+    sendVehicleLiveEvent({ type: "status", source: "obd", state: "error", detail, updatedAt: new Date().toISOString() });
+  });
+  child.on("close", () => {
+    if (vehicleLiveWorker === child) {
+      vehicleLiveWorker = null;
+    }
+    if (startFailed) {
+      return;
+    }
+    sendVehicleLiveEvent({ type: "status", source: "can", state: "idle", detail: "Worker stopped", updatedAt: new Date().toISOString() });
+    sendVehicleLiveEvent({ type: "status", source: "obd", state: "idle", detail: "Worker stopped", updatedAt: new Date().toISOString() });
+  });
+  child.stdin.end(JSON.stringify(payload || {}));
+  return { ok: true };
+});
+
+ipcMain.handle("vehicle:stop-live", async () => {
+  stopVehicleLiveWorker();
+  return { ok: true };
+});
+
+function handleVehicleLiveStdout(chunk) {
+  vehicleLiveStdoutBuffer += chunk;
+  const lines = vehicleLiveStdoutBuffer.split(/\r?\n/);
+  vehicleLiveStdoutBuffer = lines.pop() || "";
+  for (const line of lines) {
+    if (!line.trim()) {
+      continue;
+    }
+    try {
+      sendVehicleLiveEvent(JSON.parse(line));
+    } catch (error) {
+      sendVehicleLiveEvent({
+        type: "status",
+        source: "can",
+        state: "error",
+        detail: `Invalid worker event: ${error.message}`,
+        updatedAt: new Date().toISOString(),
+      });
+    }
+  }
+}
+
+function sendVehicleLiveEvent(event) {
+  if (mainWindow && !mainWindow.isDestroyed()) {
+    mainWindow.webContents.send("vehicle-live:event", event);
+  }
+}
+
+function stopVehicleLiveWorker() {
+  if (!vehicleLiveWorker) {
+    return;
+  }
+  const child = vehicleLiveWorker;
+  vehicleLiveWorker = null;
+  child.removeAllListeners("close");
+  child.kill();
+}
 
 async function fetchIpLocation() {
   const response = await fetch("https://ipapi.co/json/", {

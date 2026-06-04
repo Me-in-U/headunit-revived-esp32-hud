@@ -34,6 +34,7 @@ test("renderTopControls updates canvas metadata controls and vehicle options", (
     currentScreen: "bridge",
     appLanguage: "ko",
     paletteQuery: "speed",
+    simulationEnabled: true,
     history: { undo: [{}], redo: [] },
     vehicleProfiles: {
       avante: { label: "Avante HD" },
@@ -45,6 +46,7 @@ test("renderTopControls updates canvas metadata controls and vehicle options", (
     screenSelect: { value: "" },
     languageSelect: { value: "" },
     backgroundColor: { value: "" },
+    simulationToggle: { checked: false },
     undoBtn: { disabled: false },
     redoBtn: { disabled: false },
     paletteSearch: { value: "" },
@@ -61,6 +63,7 @@ test("renderTopControls updates canvas metadata controls and vehicle options", (
   assert.equal(dom.screenSelect.value, "bridge");
   assert.equal(dom.languageSelect.value, "ko");
   assert.equal(dom.backgroundColor.value, "#123456");
+  assert.equal(dom.simulationToggle.checked, true);
   assert.equal(dom.undoBtn.disabled, false);
   assert.equal(dom.redoBtn.disabled, true);
   assert.equal(dom.paletteSearch.value, "speed");

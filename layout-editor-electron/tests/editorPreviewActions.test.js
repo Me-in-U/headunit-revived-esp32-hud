@@ -109,6 +109,31 @@ test("renderPreview schedules a follow-up when pending work appeared during rend
   assert.deepEqual(calls.scheduled, [30]);
 });
 
+test("renderPreview includes simulation override only when one is available", async () => {
+  const layout = { canvas: { width: 1920, height: 480 } };
+  const state = {
+    layout,
+    currentScreen: "standalone",
+    previewBusy: false,
+    previewPending: false,
+    renderToken: 0,
+  };
+  const dom = { previewImage: {}, pixelStatus: { textContent: "" } };
+  const { calls, options } = previewOptions({
+    previewStateOverride: () => ({ vehicle: { speed_kmh: 88 } }),
+  });
+
+  await PreviewActions.renderPreview(state, dom, options);
+
+  assert.deepEqual(calls.rendered[0], {
+    layout,
+    currentScreen: "standalone",
+    width: 1920,
+    height: 480,
+    stateOverride: { vehicle: { speed_kmh: 88 } },
+  });
+});
+
 test("renderPreview reports render errors and clears busy state", async () => {
   const state = {
     layout: { canvas: {} },

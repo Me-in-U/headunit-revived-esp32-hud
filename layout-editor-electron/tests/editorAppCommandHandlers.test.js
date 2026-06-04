@@ -12,6 +12,7 @@ test("createAppCommandHandlers routes command context background pointer history
   };
   const dom = {
     backgroundColor: { value: "#112233" },
+    canChannel: { value: "" },
     languageSelect: { value: "en" },
     screenSelect: { value: "bridge" },
     vehicleSelect: { value: "avante" },
@@ -77,6 +78,14 @@ test("createAppCommandHandlers routes command context background pointer history
       fetchWeatherCommand: async (actualState, hudEditor, navigatorRef, deps) =>
         calls.push(["weather", actualState, hudEditor, navigatorRef, deps.name]),
     },
+    vehicleLiveActions: {
+      scanComPortsCommand: async (actualState, hudEditor, deps) =>
+        calls.push(["scanComPorts", actualState, hudEditor, deps.name]),
+      selectComPortCommand: (actualState, device, actualDom, deps) =>
+        calls.push(["selectComPort", actualState, device, actualDom, deps.name]),
+      selectObdDeviceAndConnectCommand: async (actualState, hudEditor, address, actualDom, deps) =>
+        calls.push(["selectObdDevice", actualState, hudEditor, address, actualDom, deps.name]),
+    },
   };
 
   const handlers = CommandHandlers.createAppCommandHandlers({
@@ -98,6 +107,9 @@ test("createAppCommandHandlers routes command context background pointer history
   await handlers.exportFieldPack();
   await handlers.fetchWeather();
   handlers.onVehicleChange();
+  await handlers.scanComPorts();
+  handlers.selectComPort("COM7");
+  await handlers.selectObdDevice("AA:BB");
   handlers.onScreenChange();
   handlers.importOtherScreen();
   handlers.onLanguageChange();
@@ -139,6 +151,12 @@ test("createAppCommandHandlers routes command context background pointer history
     "weather",
     "deps:context",
     "vehicle",
+    "deps:vehicleLive",
+    "scanComPorts",
+    "deps:vehicleLive",
+    "selectComPort",
+    "deps:vehicleLive",
+    "selectObdDevice",
     "deps:context",
     "screen",
     "deps:context",
@@ -197,6 +215,7 @@ function dependencyFactories(calls, expectedRuntime) {
     fileCommandDeps: dependency("file"),
     historyCommandDeps: dependency("history"),
     pointerActionDeps: dependency("pointer"),
+    vehicleLiveActionDeps: dependency("vehicleLive"),
     weatherActionDeps: dependency("weather"),
   };
 }

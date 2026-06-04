@@ -29,7 +29,6 @@ class CollectVehicleBaselineScriptTest(unittest.TestCase):
                     [
                         "HEADUNIT_HUD_OBD_PORT=/dev/rfcomm0",
                         "HEADUNIT_HUD_OBD_BAUD=115200",
-                        "HEADUNIT_HUD_CAN_CHANNEL=can0",
                     ]
                 ),
                 encoding="utf-8",
@@ -47,7 +46,6 @@ class CollectVehicleBaselineScriptTest(unittest.TestCase):
 
         self.assertEqual("/dev/rfcomm0", args.obd_port)
         self.assertEqual(115200, args.obd_baud)
-        self.assertEqual("can0", args.can_channel)
 
     def test_ble_obd_environment_is_loaded_before_parser_defaults(self) -> None:
         module = load_collect_vehicle_baseline_module()
@@ -134,14 +132,13 @@ class CollectVehicleBaselineScriptTest(unittest.TestCase):
                 ),
                 encoding="utf-8",
             )
-            args = module.build_parser().parse_args(["--vehicle-profile", str(profile_path), "--skip-can"])
+            args = module.build_parser().parse_args(["--vehicle-profile", str(profile_path)])
 
-            with patch.object(module, "collect_obd", return_value={"configured": False, "records": []}) as collect_obd, patch.object(
-                module, "collect_can", return_value={"configured": False, "records": []}
-            ):
+            with patch.object(module, "collect_obd", return_value={"configured": False, "records": []}) as collect_obd:
                 report = module.build_report(args)
 
         self.assertEqual("test_vehicle", report["vehicle"])
+        self.assertNotIn("can", report)
         collect_obd.assert_called_once()
         self.assertEqual(["ATSH7D1", "ATCRA7D9", "220104"], collect_obd.call_args.args[1][-3:])
 

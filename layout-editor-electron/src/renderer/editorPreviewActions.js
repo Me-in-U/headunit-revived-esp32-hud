@@ -9,15 +9,20 @@
     }
     state.previewBusy = true;
     const token = ++state.renderToken;
-    options.setStatus(options.translate("renderPreview"));
+      options.setStatus(options.translate("renderPreview"));
     try {
       const canvas = state.layout.canvas || {};
-      const response = await options.renderPreview({
+      const request = {
         layout: state.layout,
         currentScreen: state.currentScreen,
         width: canvas.width || 1920,
         height: canvas.height || 480,
-      });
+      };
+      const stateOverride = options.previewStateOverride ? options.previewStateOverride(state) : null;
+      if (stateOverride) {
+        request.stateOverride = stateOverride;
+      }
+      const response = await options.renderPreview(request);
       if (token !== state.renderToken) {
         return;
       }

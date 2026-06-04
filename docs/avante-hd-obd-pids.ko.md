@@ -174,7 +174,7 @@ A4CF2 기준 기어비:
 5. ATF temperature/current gear는 앱 플러그인 또는 전문 진단기에서 실제 표시를 확인하기 전까지 HUD contract에 넣지 않는다.
 6. 확장 PID 하나가 응답하지 않아도 OBD polling loop 전체를 막지 않는다. timeout, no data, invalid response는 field 단위로 격리한다.
 
-현재 Pi baseline collector는 기본 표준 PID/DTC 명령 뒤에 차량 profile의 `obd_probe_commands`를 자동으로 추가한다. `avante_hd_2010_1_6_at` profile에는 위 Engine ECU, ABS/ESP, Cluster 후보가 들어 있으며 모두 `confirmed:false`다. 이 값은 실차 응답 수집용이지 HUD 표시 확정값이 아니다.
+현재 Windows 레이아웃 에디터의 `OBD Analysis` 탭은 차량 profile의 `obd_probe_commands`를 probe command로 다룬다. `avante_hd_2010_1_6_at` profile에는 위 Engine ECU, ABS/ESP, Cluster 후보가 들어 있으며 모두 `confirmed:false`다. 이 값은 실차 응답 수집용이지 HUD 표시 확정값이 아니다. Pi의 OBD baseline collector도 같은 command를 fallback으로 실행할 수 있지만, 새 OBD 조사 workflow의 기본 경로는 Windows 에디터다.
 
 ## 실차 검증 체크리스트
 

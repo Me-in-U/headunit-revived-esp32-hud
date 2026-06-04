@@ -21,18 +21,6 @@ from editor_paths import (  # noqa: E402
 
 ensure_pi_hud_path()
 
-from editor_layout import prepare_for_save, prepare_for_screen  # noqa: E402
-from hud_pi.layout_verifier import verify_layout  # noqa: E402
-from editor_preview import render_preview_png  # noqa: E402
-from editor_services import (  # noqa: E402
-    export_field_pack_response,
-    load_layout_response,
-    metadata_response,
-    payload_layout,
-    render_size,
-    verification_response,
-)
-
 def main() -> int:
     command = sys.argv[1] if len(sys.argv) > 1 else ""
     payload = read_payload()
@@ -56,23 +44,52 @@ def read_payload() -> dict[str, Any]:
 
 
 def dispatch(command: str, payload: dict[str, Any]) -> dict[str, Any]:
+    if command == "scan-obd-ble":
+        from editor_vehicle_live import scan_obd_ble_devices
+
+        return scan_obd_ble_devices(float(payload.get("timeoutSeconds", 5.0)))
+    if command == "inspect-obd-ble":
+        from editor_vehicle_live import inspect_obd_ble_device
+
+        return inspect_obd_ble_device(str(payload.get("mac", "")), float(payload.get("timeoutSeconds", 5.0)))
+    if command == "list-com-ports":
+        from editor_com_ports import list_com_ports
+
+        return list_com_ports()
     if command == "metadata":
+        from editor_services import metadata_response
+
         return metadata_response()
     if command == "load-default":
+        from editor_services import load_layout_response
+
         return load_layout_response(default_layout_path())
     if command == "load-layout":
+        from editor_services import load_layout_response
+
         return load_layout_response(Path(str(payload["path"])))
     if command == "render-preview":
+        from editor_preview import render_preview_png
+        from editor_services import payload_layout, render_size
+
         layout = payload_layout(payload)
         width, height = render_size(layout, payload)
-        png = render_preview_png(layout, width, height)
+        state_override = payload.get("stateOverride")
+        png = render_preview_png(layout, width, height, state_override if isinstance(state_override, dict) else None)
         return {"ok": True, "width": width, "height": height, "png": base64.b64encode(png).decode("ascii")}
     if command == "validate-layout":
+        from editor_layout import prepare_for_screen
+        from editor_services import payload_layout, verification_response
+        from hud_pi.layout_verifier import verify_layout
+
         layout = prepare_for_screen(payload_layout(payload), str(payload.get("currentScreen", "standalone")))
         canvas = layout["canvas"]
         result = verify_layout(layout, width=canvas["width"], height=canvas["height"])
         return verification_response(result)
     if command == "save-layout":
+        from editor_layout import prepare_for_save
+        from editor_services import payload_layout
+
         output = Path(str(payload["path"]))
         layout = prepare_for_save(payload_layout(payload), str(payload.get("currentScreen", "standalone")))
         output.parent.mkdir(parents=True, exist_ok=True)
@@ -84,12 +101,19 @@ def dispatch(command: str, payload: dict[str, Any]) -> dict[str, Any]:
             "message": f"Saved layout: {output}",
         }
     if command == "export-snapshot":
+        from editor_layout import prepare_for_screen
+        from editor_services import payload_layout, verification_response
+        from hud_pi.layout_verifier import verify_layout
+
         layout = prepare_for_screen(payload_layout(payload), str(payload.get("currentScreen", "standalone")))
         output = Path(str(payload["output"]))
         canvas = layout["canvas"]
         result = verify_layout(layout, width=canvas["width"], height=canvas["height"], output=output)
         return verification_response(result)
     if command == "export-field-pack":
+        from editor_layout import prepare_for_save
+        from editor_services import export_field_pack_response, payload_layout
+
         output = Path(str(payload["output"]))
         layout_path = Path(str(payload.get("path") or default_layout_path()))
         layout = prepare_for_save(payload_layout(payload), str(payload.get("currentScreen", "standalone")))

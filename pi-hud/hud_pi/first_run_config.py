@@ -94,7 +94,7 @@ def next_steps(
     if probe_display_output and display_probe_issues:
         steps.append("Fix the Pi framebuffer/display mode before relying on the 1920x480 HUD.")
     if not steps:
-        steps.append("Run diagnose-inputs.py, then collect-vehicle-baseline.py with ignition on.")
+        steps.append("Use the Windows editor Connection/CAN Analysis/OBD Analysis tabs for live simulation, then run diagnose-inputs.py on the Pi.")
     return steps
 
 

@@ -34,6 +34,9 @@
       propertyActions: windowRef.EditorPropertyActions,
       renderCoordinator: windowRef.EditorRenderCoordinator,
       topControls: windowRef.EditorTopControls,
+      vehicleLiveActions: windowRef.EditorVehicleLiveActions,
+      vehicleLiveState: windowRef.EditorVehicleLiveState,
+      vehicleLiveView: windowRef.EditorVehicleLiveView,
       viewModel: windowRef.EditorViewModel,
       weatherActions: windowRef.EditorWeatherActions,
     };
@@ -64,6 +67,9 @@
       propertyActions: modules.propertyActions,
       requestAnimationFrameRef: refs.requestAnimationFrameRef,
       topControls: modules.topControls,
+      vehicleLiveActions: modules.vehicleLiveActions,
+      vehicleLiveState: modules.vehicleLiveState,
+      vehicleLiveView: modules.vehicleLiveView,
       viewModel: modules.viewModel,
       windowRef: refs.windowRef,
     };

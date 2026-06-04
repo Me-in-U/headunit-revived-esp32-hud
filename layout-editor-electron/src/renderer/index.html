@@ -56,6 +56,10 @@
         <button id="weatherBtn" class="inline-button" data-i18n="weather">Weather</button>
         <button id="backgroundImageBtn" class="inline-button" data-i18n="bgImage">BG Image</button>
         <button id="clearBackgroundBtn" class="inline-button danger-ghost" data-i18n="clearBg">Clear BG</button>
+        <label class="toggle-label">
+          <input id="simulationToggle" type="checkbox" />
+          <span data-i18n="simulation">Simulation</span>
+        </label>
       </section>
 
       <main class="workspace">
@@ -88,15 +92,195 @@
           <aside class="sidebar palette-panel">
             <div class="panel-heading">
               <div>
-                <h2 data-i18n="elements">Elements</h2>
-                <p data-i18n="elementsHint">Add by driver task</p>
+                <h2 data-i18n="tools">Tools</h2>
+                <p data-i18n="toolsHint">Layout, live input, and analysis</p>
               </div>
-          </div>
-          <nav id="categoryTabs" class="category-tabs" aria-label="Palette categories"></nav>
-          <div class="palette-search">
-            <input id="paletteSearch" type="text" data-i18n-placeholder="searchPalette" placeholder="Search elements" />
-          </div>
-          <div id="paletteButtons" class="palette-list"></div>
+            </div>
+            <nav class="tool-tabs" aria-label="Editor tools">
+              <button id="elementsTab" class="tool-tab active" type="button" data-tool-tab="elements" aria-selected="true" data-i18n="elements">Elements</button>
+              <button id="connectionTab" class="tool-tab" type="button" data-tool-tab="connection" aria-selected="false" data-i18n="connection">Connection</button>
+              <button id="canAnalysisTab" class="tool-tab" type="button" data-tool-tab="can" aria-selected="false" data-i18n="canAnalysis">CAN Analysis</button>
+              <button id="obdAnalysisTab" class="tool-tab" type="button" data-tool-tab="obd" aria-selected="false" data-i18n="obdAnalysis">OBD Analysis</button>
+            </nav>
+            <section id="elementsPanel" class="tool-panel">
+              <nav id="categoryTabs" class="category-tabs" aria-label="Palette categories"></nav>
+              <div class="palette-search">
+                <input id="paletteSearch" type="text" data-i18n-placeholder="searchPalette" placeholder="Search elements" />
+              </div>
+              <div id="paletteButtons" class="palette-list"></div>
+            </section>
+            <section id="connectionPanel" class="tool-panel vehicle-tool-panel" hidden>
+              <div class="connection-layout">
+                <div class="connection-card connection-card-obd">
+                  <div class="section-title">
+                    <div>
+                      <h3>OBD Bluetooth</h3>
+                      <p class="panel-help">Search nearby ELM327/iCar adapters, choose a device, and the editor will inspect UUIDs and connect automatically.</p>
+                    </div>
+                    <button id="scanObdBtn" class="inline-button primary" type="button">Search Bluetooth</button>
+                  </div>
+                  <div id="obdSelectedStatus" class="selection-status">No OBD adapter selected</div>
+                  <div id="obdDeviceList" class="obd-device-list" role="listbox" aria-label="OBD Bluetooth devices"></div>
+                  <details id="obdAdvancedSettings" class="advanced-settings">
+                    <summary>Advanced OBD settings</summary>
+                    <div class="field-grid">
+                      <label class="check-row">
+                        <input id="obdEnabled" type="checkbox" checked />
+                        <span>Use OBD BLE</span>
+                      </label>
+                      <label class="input-field">
+                        <span>BLE MAC</span>
+                        <input id="obdBleMac" type="text" placeholder="AA:BB:CC:DD:EE:FF" />
+                      </label>
+                      <label class="input-field">
+                        <span>RX UUID</span>
+                        <input id="obdBleRxUuid" type="text" placeholder="notify characteristic" />
+                      </label>
+                      <label class="input-field">
+                        <span>TX UUID</span>
+                        <input id="obdBleTxUuid" type="text" placeholder="write characteristic" />
+                      </label>
+                      <label class="input-field">
+                        <span>Timeout seconds</span>
+                        <input id="obdTimeout" type="number" min="0.5" step="0.5" value="2" />
+                      </label>
+                      <button id="inspectObdBtn" class="inline-button" type="button">Inspect selected UUIDs</button>
+                    </div>
+                  </details>
+                  <div id="obdConnectionStatus" class="connection-status">idle</div>
+                </div>
+                <div class="connection-card connection-card-can">
+                  <div class="section-title">
+                    <div>
+                      <h3>CANable USB</h3>
+                      <p class="panel-help">Optional raw CAN input. Refresh COM ports, select the CANable USB serial device, or edit the channel manually.</p>
+                    </div>
+                    <button id="scanComPortsBtn" class="inline-button primary" type="button">Refresh COM ports</button>
+                  </div>
+                  <div id="comSelectedStatus" class="selection-status">No COM port selected</div>
+                  <div id="comPortList" class="com-port-list" role="listbox" aria-label="Connected COM ports"></div>
+                  <div class="field-grid">
+                    <label class="check-row">
+                      <input id="canEnabled" type="checkbox" checked />
+                      <span>Use CANable SLCAN</span>
+                    </label>
+                    <label class="input-field">
+                      <span>Channel</span>
+                      <input id="canChannel" type="text" placeholder="COM7@115200" />
+                    </label>
+                    <label class="input-field">
+                      <span>Bitrate</span>
+                      <input id="canBitrate" type="number" value="500000" />
+                    </label>
+                    <label class="check-row">
+                      <input id="canListenOnly" type="checkbox" checked />
+                      <span>Listen-only</span>
+                    </label>
+                  </div>
+                  <div class="button-row">
+                    <button id="startVehicleLiveBtn" class="inline-button" type="button">Connect configured inputs</button>
+                    <button id="stopVehicleLiveBtn" class="inline-button danger-ghost" type="button">Disconnect</button>
+                  </div>
+                  <div id="canConnectionStatus" class="connection-status">idle</div>
+                </div>
+              </div>
+            </section>
+            <section id="canAnalysisPanel" class="tool-panel vehicle-tool-panel" hidden>
+              <div class="can-analysis-layout">
+                <div class="can-analysis-main">
+                  <p class="panel-help">Use live CAN frames to narrow down a frame ID and byte/bit location. Save only signals that have been verified on the real vehicle.</p>
+                  <div class="analysis-metrics">
+                    <div><span>Frames</span><strong id="canFrameCount">0</strong></div>
+                    <div><span>Last ID</span><strong id="canLastId">--</strong></div>
+                  </div>
+                  <div class="profile-editor">
+                    <label class="input-field">
+                      <span>Frame ID</span>
+                      <input id="canSignalFrameId" type="text" placeholder="0x316" />
+                    </label>
+                    <label class="input-field">
+                      <span>HUD state path</span>
+                      <input id="canSignalName" type="text" placeholder="vehicle.gear_actual" />
+                    </label>
+                    <label class="input-field">
+                      <span>Start byte</span>
+                      <input id="canSignalStartByte" type="number" min="0" placeholder="0" />
+                    </label>
+                    <label class="input-field">
+                      <span>Byte length</span>
+                      <input id="canSignalLength" type="number" min="1" placeholder="1" />
+                    </label>
+                    <label class="input-field">
+                      <span>Start bit</span>
+                      <input id="canSignalStartBit" type="number" min="0" max="7" placeholder="0" />
+                    </label>
+                    <label class="input-field">
+                      <span>Bit length</span>
+                      <input id="canSignalBitLength" type="number" min="1" placeholder="1" />
+                    </label>
+                    <label class="input-field">
+                      <span>Scale</span>
+                      <input id="canSignalScale" type="number" step="0.001" placeholder="1" />
+                    </label>
+                    <label class="input-field">
+                      <span>Offset</span>
+                      <input id="canSignalOffset" type="number" step="0.001" placeholder="0" />
+                    </label>
+                    <button id="saveCanSignalBtn" class="inline-button primary" type="button">Save Signal</button>
+                  </div>
+                  <h3>Summary</h3>
+                  <div id="canSummaryList" class="analysis-list"></div>
+                  <h3>Frames</h3>
+                  <div id="canFrameList" class="analysis-list"></div>
+                  <h3>Decoded preview</h3>
+                  <pre id="canDecodedPreview" class="decoded-preview">{}</pre>
+                </div>
+                <aside class="live-log-panel">
+                  <div class="section-title">
+                    <div>
+                      <h3>Live log</h3>
+                      <p class="panel-help">Latest CAN frames, OBD responses, and copied live sample state while connected.</p>
+                    </div>
+                  </div>
+                  <div class="live-status-grid">
+                    <div class="live-status-item">
+                      <span>CAN</span>
+                      <strong id="liveCanStatus">idle</strong>
+                    </div>
+                    <div class="live-status-item">
+                      <span>OBD</span>
+                      <strong id="liveObdStatus">idle</strong>
+                    </div>
+                  </div>
+                  <div class="sample-row live-sample-row">
+                    <span id="liveSampleStatus">No live sample</span>
+                    <button id="copyLiveSampleBtn" class="inline-button" type="button">Copy Live Sample</button>
+                  </div>
+                  <div id="liveLogList" class="live-log-list" aria-label="Recent live events"></div>
+                </aside>
+              </div>
+            </section>
+            <section id="obdAnalysisPanel" class="tool-panel vehicle-tool-panel" hidden>
+              <p class="panel-help">Use OBD analysis to inspect adapter identity, supported PID bitmap, DTCs, and vehicle-specific probe commands before saving them to the vehicle profile.</p>
+              <div class="obd-debug">
+                <div><span>Adapter</span><strong id="obdAdapterIdentity">--</strong></div>
+                <div><span>Protocol</span><strong id="obdProtocol">--</strong></div>
+                <div><span>Supported PIDs</span><strong id="obdSupportedPids">--</strong></div>
+                <div><span>DTC</span><strong id="obdDtcList">--</strong></div>
+              </div>
+              <div class="obd-debug">
+                <div><span>Last request</span><strong id="obdLastRequest">--</strong></div>
+                <div><span>Last response</span><strong id="obdLastResponse">--</strong></div>
+              </div>
+              <div class="profile-editor obd-profile-editor">
+                <label class="input-field">
+                  <span>Probe commands</span>
+                  <input id="obdProbeCommand" type="text" placeholder="ATSH7E0, ATCRA7E8, 2101" />
+                </label>
+                <button id="addObdProbeBtn" class="inline-button primary" type="button">Add Probe</button>
+              </div>
+              <div id="obdRecordList" class="analysis-list"></div>
+            </section>
         </aside>
         </section>
 
@@ -144,6 +328,9 @@
     <script src="./editorFileActions.js"></script>
     <script src="./editorFileCommands.js"></script>
     <script src="./editorWeatherActions.js"></script>
+    <script src="./editorVehicleLiveState.js"></script>
+    <script src="./editorVehicleLiveView.js"></script>
+    <script src="./editorVehicleLiveActions.js"></script>
     <script src="./dragGhost.js"></script>
     <script src="./editorCanvasViewModel.js"></script>
     <script src="./editorViewModel.js"></script>
@@ -177,6 +364,7 @@
     <script src="./editorAppCommandHandlers.js"></script>
     <script src="./editorAppHandlers.js"></script>
     <script src="./editorAppRuntime.js"></script>
+    <script src="./editorBrowserRefs.js"></script>
     <script src="./app.js"></script>
   </body>
 </html>

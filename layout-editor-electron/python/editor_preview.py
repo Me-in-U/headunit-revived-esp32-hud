@@ -14,13 +14,17 @@ ensure_pi_hud_path()
 import pygame  # noqa: E402
 from hud_pi.renderer import HudRenderer  # noqa: E402
 from hud_pi.state import HudState  # noqa: E402
+from hud_pi.state_merge import deep_merge  # noqa: E402
 
 
-def render_preview_png(layout: dict[str, Any], width: int, height: int) -> bytes:
+def render_preview_png(layout: dict[str, Any], width: int, height: int, state_override: dict[str, Any] | None = None) -> bytes:
     pygame.font.init()
     preview_layout = copy.deepcopy(layout)
     preview_layout.pop("screens", None)
-    state = HudState.from_layout(preview_layout)
+    state_values = copy.deepcopy(preview_layout.get("dummy_data", {}))
+    if isinstance(state_override, dict):
+        deep_merge(state_values, copy.deepcopy(state_override))
+    state = HudState(state_values)
     warnings = state.values.setdefault("warnings", {})
     for element in preview_layout.get("elements", []):
         if not isinstance(element, dict) or element.get("type") != "warning_icon":

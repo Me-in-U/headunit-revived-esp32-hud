@@ -4,7 +4,7 @@
 
 Headunit Revived의 내비게이션 안내를 별도 HUD에 표시하는 companion stack입니다.
 
-이 프로젝트는 Headunit Revived를 포크하지 않는 실험적 companion stack입니다. 현재 주 대상은 Raspberry Pi 4B + 1920x480 HDMI 보조 디스플레이이며, Pi가 iCar/ELM327 OBD와 CANable/SocketCAN을 직접 읽고 화면도 직접 렌더링합니다. Android 앱은 같은 네트워크에 있을 때 Headunit Revived 내비게이션 정보와 태블릿/GPS backup speed만 UDP로 보냅니다.
+이 프로젝트는 Headunit Revived를 포크하지 않는 실험적 companion stack입니다. 현재 주 대상은 Raspberry Pi 4B + 1920x480 HDMI 보조 디스플레이이며, Pi가 iCar/ELM327 OBD와 CANable/SocketCAN으로 확정된 런타임 차량값을 직접 읽고 화면도 직접 렌더링합니다. Raw OBD/CAN 조사와 live simulation은 Pi에 적용하기 전에 Windows Electron 레이아웃 에디터에서 처리합니다. Android 앱은 같은 네트워크에 있을 때 Headunit Revived 내비게이션 정보와 태블릿/GPS backup speed만 UDP로 보냅니다.
 
 ESP32 dual-OLED HUD 경로도 저장소에 남아 있으며, BLE provisioning과 UDP packet 렌더링을 계속 지원합니다. Raspberry Pi 기준 구조는 [Raspberry Pi HUD 런타임 가이드](docs/pi-hud-runtime.ko.md)를 참고하세요.
 
@@ -15,7 +15,7 @@ ESP32 dual-OLED HUD 경로도 저장소에 남아 있으며, BLE provisioning과
 - Android 대상: Headunit Revived와 이 브리지 앱이 설치된 태블릿. Pi 경로에서는 내비 정보와 backup speed만 보냅니다.
 - 레이아웃: Windows exe 에디터에서 1920x480 JSON 레이아웃을 저장하고 Pi가 그대로 렌더링합니다. 속도/RPM 같은 값은 digital, bar, analog, needle, sport gauge 스타일과 최대값을 지정할 수 있습니다.
 - Legacy 대상: ESP32-S3-N16R8 + 128x64 I2C OLED 2개.
-- 전송 방식: Pi 차량 정보는 로컬 OBD/CAN, Android 내비 보강은 UDP. ESP32 초기 Wi-Fi 설정은 BLE.
+- 전송 방식: Pi 런타임 차량 정보는 로컬 OBD/CAN, Windows 분석/시뮬레이션은 OBD BLE와 CANable SLCAN, Android 내비 보강은 UDP. ESP32 초기 Wi-Fi 설정은 BLE.
 - 안정성: active prototype. 패킷 필드는 추가 방식으로 확장하며 backward compatibility를 유지합니다.
 
 ## 저장소 구조
@@ -26,7 +26,7 @@ ESP32 dual-OLED HUD 경로도 저장소에 남아 있으며, BLE provisioning과
 | `bridge-core/` | 패킷, 상태, 타이밍, 매핑 로직을 담은 순수 Kotlin 모듈과 unit test. |
 | `esp32-hud/` | ESP32-S3용 PlatformIO 펌웨어. BLE provisioning, Wi-Fi reconnect, UDP discovery, packet parsing, OLED rendering을 담당합니다. |
 | `pi-hud/` | Raspberry Pi 4B + HDMI 보조 디스플레이용 1920x480 HUD 런타임. OBD/CAN 로컬 입력과 Android 내비 UDP 입력을 병합합니다. |
-| `layout-editor-electron/` | 1920x480 HUD JSON 레이아웃을 편집하는 현대식 Electron 에디터. Pi pygame 렌더러를 재사용해 preview가 런타임과 맞습니다. |
+| `layout-editor-electron/` | 1920x480 HUD JSON 레이아웃을 편집하는 현대식 Electron 에디터. Pi pygame 렌더러를 재사용해 preview가 런타임과 맞고, Windows OBD/CAN 연결, 시뮬레이션, 분석 도구를 제공합니다. |
 | `layouts/` | Pi HUD와 레이아웃 에디터가 공유하는 화면 JSON. |
 | `vehicles/` | 레이아웃 에디터에서 선택 가능한 차종 프로필 JSON. 선택한 프로필은 저장 레이아웃에 함께 embed됩니다. |
 | `docs/setup.md` | Android, ESP32, OLED wiring, network troubleshooting 설정 가이드. |
@@ -35,12 +35,13 @@ ESP32 dual-OLED HUD 경로도 저장소에 남아 있으며, BLE provisioning과
 ## 동작 흐름
 
 1. Pi가 1920x480 HDMI 화면을 열고 레이아웃 JSON을 렌더링합니다.
-2. Pi가 iCar/ELM327에서 표준 OBD PID를 읽고, CANable/SocketCAN에서 raw CAN을 읽습니다.
-3. Pi가 UDP port `4211`에서 Android bridge discovery에 `device_kind=pi_hud`로 응답합니다.
-4. Headunit Revived가 태블릿에서 내비게이션 브로드캐스트를 발행합니다.
-5. 브리지 앱이 브로드캐스트를 compact JSON HUD packet으로 변환합니다.
-6. 브리지 앱은 Pi target에 navigation packet과 `type=speed` backup speed만 보냅니다.
-7. Pi는 port `4210`에서 UDP packet을 받고, stale sequence number를 무시한 뒤 로컬 차량 데이터와 병합해 HUD를 렌더링합니다.
+2. Windows 에디터가 OBD BLE와 CANable USB/SLCAN에 연결해 live 값을 시뮬레이션하고, CAN/OBD traffic을 분석하며, 확정된 profile mapping을 저장합니다.
+3. Pi가 iCar/ELM327에서 표준 OBD PID를 읽고, CANable/SocketCAN에서 확정된 CAN 신호만 decode합니다.
+4. Pi가 UDP port `4211`에서 Android bridge discovery에 `device_kind=pi_hud`로 응답합니다.
+5. Headunit Revived가 태블릿에서 내비게이션 브로드캐스트를 발행합니다.
+6. 브리지 앱이 브로드캐스트를 compact JSON HUD packet으로 변환합니다.
+7. 브리지 앱은 Pi target에 navigation packet과 `type=speed` backup speed만 보냅니다.
+8. Pi는 port `4210`에서 UDP packet을 받고, stale sequence number를 무시한 뒤 로컬 차량 데이터와 병합해 HUD를 렌더링합니다.
 
 HUD packet은 fire-and-forget 방식입니다. HUD receiver는 실시간 내비게이션 패킷에 ACK를 보내지 않으므로, 지연된 return traffic이 현재 안내를 늦추지 않습니다.
 

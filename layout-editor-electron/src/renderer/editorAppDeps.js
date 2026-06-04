@@ -24,6 +24,7 @@
     pointerActionDeps: CommandDeps.pointerActionDeps,
     previewDeps: RenderDeps.previewDeps,
     renderCoordinatorDeps: RenderDeps.renderCoordinatorDeps,
+    vehicleLiveActionDeps: CommandDeps.vehicleLiveActionDeps,
     weatherActionDeps: CommandDeps.weatherActionDeps,
   };
 
