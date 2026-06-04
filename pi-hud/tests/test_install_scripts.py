@@ -170,6 +170,16 @@ class InstallScriptsTest(unittest.TestCase):
         self.assertIn("--apply", install_script)
         self.assertIn("--no-restart", install_script)
 
+    def test_pi_install_unmasks_and_copies_update_timer_as_unit_file(self) -> None:
+        pi_hud_root = Path(__file__).resolve().parents[1]
+        install_script = (pi_hud_root / "scripts" / "install-pi.sh").read_text(encoding="utf-8")
+        setup_script = (pi_hud_root.parents[0] / "setup-pi-hud.sh").read_text(encoding="utf-8")
+
+        self.assertIn("systemctl unmask headunit-pi-hud-update.timer", install_script)
+        self.assertIn('cat "${APP_DIR}/pi-hud/systemd/headunit-pi-hud-update.timer" > "${UPDATE_TIMER_FILE}"', install_script)
+        self.assertNotIn('sed \\\n  "${APP_DIR}/pi-hud/systemd/headunit-pi-hud-update.timer"', install_script)
+        self.assertIn("systemctl unmask headunit-pi-hud-update.timer", setup_script)
+
     def test_git_update_script_fast_forwards_and_restarts_runtime_only_when_enabled(self) -> None:
         pi_hud_root = Path(__file__).resolve().parents[1]
         update_script = (pi_hud_root / "scripts" / "update-from-git.sh").read_text(encoding="utf-8")

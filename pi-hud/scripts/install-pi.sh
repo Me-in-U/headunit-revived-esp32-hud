@@ -84,6 +84,10 @@ if [ "${HEADUNIT_HUD_SKIP_AUTO_CONFIG:-0}" != "1" ]; then
     --env-file "${ENV_FILE}" || true
 fi
 
+systemctl unmask headunit-pi-hud.service || true
+systemctl unmask headunit-pi-hud-update.service || true
+systemctl unmask headunit-pi-hud-update.timer || true
+
 sed \
   -e "s|^User=.*|User=${SERVICE_USER}|" \
   -e "s|/opt/headunit-pi-hud|${APP_DIR}|g" \
@@ -93,8 +97,7 @@ sed \
   -e "s|/opt/headunit-pi-hud|${APP_DIR}|g" \
   "${APP_DIR}/pi-hud/systemd/headunit-pi-hud-update.service" > "${UPDATE_SERVICE_FILE}"
 
-sed \
-  "${APP_DIR}/pi-hud/systemd/headunit-pi-hud-update.timer" > "${UPDATE_TIMER_FILE}"
+cat "${APP_DIR}/pi-hud/systemd/headunit-pi-hud-update.timer" > "${UPDATE_TIMER_FILE}"
 
 usermod -aG dialout,video,render,input,bluetooth "${SERVICE_USER}" || true
 

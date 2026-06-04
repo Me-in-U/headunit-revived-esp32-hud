@@ -46,10 +46,13 @@ install_or_update() {
   echo "[1/3] Installing/updating Headunit Pi HUD..."
   run_sudo bash "${ROOT_DIR}/pi-hud/scripts/install-pi.sh" "${APP_DIR}"
   echo "[2/3] Enabling HUD autostart..."
+  run_sudo systemctl unmask headunit-pi-hud.service || true
   run_sudo systemctl enable headunit-pi-hud.service
   run_sudo systemctl restart headunit-pi-hud.service
   echo "[3/3] Enabling automatic git updates..."
   set_env_value HEADUNIT_HUD_AUTO_UPDATE 1
+  run_sudo systemctl unmask headunit-pi-hud-update.service || true
+  run_sudo systemctl unmask headunit-pi-hud-update.timer || true
   run_sudo systemctl enable headunit-pi-hud-update.timer
   run_sudo systemctl start headunit-pi-hud-update.timer
   echo "[OK] Install/update complete. HUD autostart and auto update are enabled."
@@ -104,6 +107,8 @@ toggle_auto_update() {
     echo "[OK] Automatic updates disabled."
   else
     set_env_value HEADUNIT_HUD_AUTO_UPDATE 1
+    run_sudo systemctl unmask headunit-pi-hud-update.service || true
+    run_sudo systemctl unmask headunit-pi-hud-update.timer || true
     run_sudo systemctl enable headunit-pi-hud-update.timer
     run_sudo systemctl start headunit-pi-hud-update.timer
     echo "[OK] Automatic updates enabled."
