@@ -119,6 +119,7 @@ write_screen_test_env() {
   {
     printf 'HEADUNIT_HUD_DUMMY=1\n'
     printf 'HEADUNIT_HUD_REQUIRE_HANDOFF=0\n'
+    printf 'HEADUNIT_HUD_WINDOWED=1\n'
     if [ -n "${width}" ] && [ -n "${height}" ]; then
       printf 'HEADUNIT_HUD_WIDTH=%s\n' "${width}"
       printf 'HEADUNIT_HUD_HEIGHT=%s\n' "${height}"

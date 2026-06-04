@@ -192,6 +192,7 @@ class InstallScriptsTest(unittest.TestCase):
         self.assertIn("HEADUNIT_HUD_FRAMEBUFFER_SIZE_FILE", setup_script)
         self.assertIn("HEADUNIT_HUD_DUMMY=1", setup_script)
         self.assertIn("HEADUNIT_HUD_REQUIRE_HANDOFF=0", setup_script)
+        self.assertIn("HEADUNIT_HUD_WINDOWED=1", setup_script)
         self.assertIn("HEADUNIT_HUD_WIDTH=%s", setup_script)
         self.assertIn("HEADUNIT_HUD_HEIGHT=%s", setup_script)
         self.assertIn("clear_screen_test_env", setup_script)
