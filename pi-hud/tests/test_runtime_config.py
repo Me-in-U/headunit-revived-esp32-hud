@@ -1,6 +1,9 @@
 from __future__ import annotations
 
 import json
+import os
+import subprocess
+import sys
 import tempfile
 import unittest
 from pathlib import Path
@@ -33,6 +36,27 @@ class RuntimeConfigTest(unittest.TestCase):
 
             with self.assertRaisesRegex(ValueError, "pi_hud_handoff metadata is missing"):
                 load_runtime_layout(args)
+
+    def test_importing_runtime_config_does_not_force_dummy_sdl_driver(self) -> None:
+        pi_hud_root = Path(__file__).resolve().parents[1]
+        env = os.environ.copy()
+        env.pop("SDL_VIDEODRIVER", None)
+        env["PYTHONPATH"] = str(pi_hud_root) + os.pathsep + env.get("PYTHONPATH", "")
+
+        result = subprocess.run(
+            [
+                sys.executable,
+                "-c",
+                "import os; os.environ.pop('SDL_VIDEODRIVER', None); import hud_pi.runtime_config; print(os.environ.get('SDL_VIDEODRIVER', ''))",
+            ],
+            cwd=pi_hud_root.parents[0],
+            env=env,
+            text=True,
+            capture_output=True,
+            check=True,
+        )
+
+        self.assertEqual("", result.stdout.strip())
 
 
 if __name__ == "__main__":
