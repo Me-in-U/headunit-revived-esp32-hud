@@ -16,28 +16,33 @@ sudo reboot
 ```bash
 git clone https://github.com/Me-in-U/headunit-revived-esp32-hud.git
 cd headunit-revived-esp32-hud
-sudo pi-hud/scripts/install-pi.sh
+sudo bash setup-pi-hud.sh 1
 ```
 
 설치가 끝나면 HUD 서비스는 부팅 시 자동 실행된다. git 자동 업데이트도 기본으로 켜진다.
 
-## 2. OBD/CAN 없이 화면만 테스트
-
-CANable과 iCar가 없어도 HUD 화면 테스트는 가능하다.
+나중에 메뉴를 다시 열고 싶으면:
 
 ```bash
-sudo sed -i \
-  -e 's/^HEADUNIT_HUD_DUMMY=.*/HEADUNIT_HUD_DUMMY=1/' \
-  -e 's/^HEADUNIT_HUD_OBD_PORT=.*/HEADUNIT_HUD_OBD_PORT=/' \
-  -e 's/^HEADUNIT_HUD_ICAR_MAC=.*/HEADUNIT_HUD_ICAR_MAC=/' \
-  -e 's/^HEADUNIT_HUD_OBD_BLE_MAC=.*/HEADUNIT_HUD_OBD_BLE_MAC=/' \
-  -e 's/^HEADUNIT_HUD_OBD_BLE_RX_UUID=.*/HEADUNIT_HUD_OBD_BLE_RX_UUID=/' \
-  -e 's/^HEADUNIT_HUD_OBD_BLE_TX_UUID=.*/HEADUNIT_HUD_OBD_BLE_TX_UUID=/' \
-  -e 's/^HEADUNIT_HUD_CAN_CHANNEL=.*/HEADUNIT_HUD_CAN_CHANNEL=/' \
-  /etc/headunit-pi-hud.env
+cd ~/headunit-revived-esp32-hud
+sudo bash setup-pi-hud.sh
+```
 
-sudo systemctl restart headunit-pi-hud.service
-sudo journalctl -u headunit-pi-hud.service -f
+메뉴에서는 보통 이 순서로 누른다.
+
+```text
+1  설치/업데이트와 자동 실행 설정
+2  OBD/CAN 없이 화면만 테스트
+3  iCar/CANable 자동 설정
+6  상태 점검
+```
+
+## 2. OBD/CAN 없이 화면만 테스트
+
+CANable과 iCar가 없어도 HUD 화면 테스트는 가능하다. 설치 직후 OBD/CAN 장비가 잡히지 않았으면 별도 설정 없이 dummy 화면으로 뜬다.
+
+```bash
+sudo bash setup-pi-hud.sh 2
 ```
 
 로그 화면은 `Ctrl+C`로 빠져나온다.
@@ -45,9 +50,7 @@ sudo journalctl -u headunit-pi-hud.service -f
 화면 크기만 확인한다.
 
 ```bash
-/opt/headunit-pi-hud/.venv/bin/python \
-  /opt/headunit-pi-hud/pi-hud/scripts/first-run-status.py \
-  --probe-display
+sudo bash setup-pi-hud.sh 6
 ```
 
 ## 3. iCar/CANable 자동 설정
@@ -55,13 +58,7 @@ sudo journalctl -u headunit-pi-hud.service -f
 iCar와 CANable을 연결하고 차량은 IGN ON 상태로 둔다. 그 다음 실행한다.
 
 ```bash
-sudo /opt/headunit-pi-hud/.venv/bin/python \
-  /opt/headunit-pi-hud/pi-hud/scripts/auto-configure-hardware.py \
-  --apply --force
-
-sudo sed -i 's/^HEADUNIT_HUD_DUMMY=.*/HEADUNIT_HUD_DUMMY=0/' /etc/headunit-pi-hud.env
-
-sudo systemctl restart headunit-pi-hud.service
+sudo bash setup-pi-hud.sh 3
 ```
 
 실제 입력까지 확인한다.
@@ -75,8 +72,7 @@ sudo systemctl restart headunit-pi-hud.service
 ## 4. 상태 확인
 
 ```bash
-sudo systemctl status headunit-pi-hud.service
-sudo journalctl -u headunit-pi-hud.service -n 80
+sudo bash setup-pi-hud.sh 6
 ```
 
 ## 5. 업데이트 확인
@@ -84,14 +80,13 @@ sudo journalctl -u headunit-pi-hud.service -n 80
 자동 업데이트는 기본으로 켜져 있다. 바로 한 번 실행하려면:
 
 ```bash
-sudo systemctl start headunit-pi-hud-update.service
-sudo journalctl -u headunit-pi-hud-update.service -n 80
+sudo bash setup-pi-hud.sh 7
 ```
 
 끄려면:
 
 ```bash
-sudo sed -i 's/^HEADUNIT_HUD_AUTO_UPDATE=.*/HEADUNIT_HUD_AUTO_UPDATE=0/' /etc/headunit-pi-hud.env
+sudo bash setup-pi-hud.sh 8
 ```
 
 ## 막히면

@@ -53,6 +53,10 @@ if [ ! -f "${ENV_FILE}" ]; then
   install -m 0644 "${APP_DIR}/pi-hud/config/pi-hud.env.example" "${ENV_FILE}"
 fi
 
+if [ -f "${APP_DIR}/setup-pi-hud.sh" ]; then
+  chmod 0755 "${APP_DIR}/setup-pi-hud.sh"
+fi
+
 chmod 0755 \
   "${APP_DIR}/pi-hud/scripts/canable-up.sh" \
   "${APP_DIR}/pi-hud/scripts/icar-rfcomm-bind.sh" \

@@ -5,6 +5,22 @@ from pathlib import Path
 
 
 class InstallScriptsTest(unittest.TestCase):
+    def test_root_setup_menu_wraps_pi_install_autostart_update_and_diagnostics(self) -> None:
+        repo_root = Path(__file__).resolve().parents[2]
+        setup_script_path = repo_root / "setup-pi-hud.sh"
+
+        self.assertTrue(setup_script_path.exists())
+        setup_script = setup_script_path.read_text(encoding="utf-8")
+
+        self.assertIn("Headunit Pi HUD Setup", setup_script)
+        self.assertIn("install-pi.sh", setup_script)
+        self.assertIn("systemctl enable headunit-pi-hud.service", setup_script)
+        self.assertIn("systemctl enable headunit-pi-hud-update.timer", setup_script)
+        self.assertIn("auto-configure-hardware.py", setup_script)
+        self.assertIn("first-run-status.py", setup_script)
+        self.assertIn("journalctl -u headunit-pi-hud.service", setup_script)
+        self.assertIn("journalctl -u headunit-pi-hud-update.service", setup_script)
+
     def test_pi_install_marks_runtime_helper_scripts_executable(self) -> None:
         pi_hud_root = Path(__file__).resolve().parents[1]
         install_script = (pi_hud_root / "scripts" / "install-pi.sh").read_text(encoding="utf-8")
