@@ -42,7 +42,7 @@ def can_configured(args: argparse.Namespace) -> bool:
 
 
 def dummy_enabled(args: argparse.Namespace) -> bool:
-    return bool(args.dummy or (not obd_configured(args) and not can_configured(args)))
+    return bool(args.dummy)
 
 
 def load_runtime_layout(args: argparse.Namespace) -> dict:

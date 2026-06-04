@@ -13,9 +13,15 @@ class RuntimeSourcesTest(unittest.TestCase):
         sources = build_vehicle_sources(args, lambda _source, _update: None)
 
         self.assertTrue(any(isinstance(source, BridgeDiscoveryResponder) for source in sources))
-        self.assertTrue(any(isinstance(source, DummyVehicleSource) for source in sources))
+        self.assertFalse(any(isinstance(source, DummyVehicleSource) for source in sources))
         receiver = next(source for source in sources if isinstance(source, BridgeUdpReceiver))
         self.assertTrue(receiver.allow_diagnostic_packets)
+
+    def test_runtime_sources_only_add_dummy_source_when_requested(self) -> None:
+        args = build_parser().parse_args(["--dummy"])
+        sources = build_vehicle_sources(args, lambda _source, _update: None)
+
+        self.assertTrue(any(isinstance(source, DummyVehicleSource) for source in sources))
 
     def test_runtime_sources_pass_selected_vehicle_can_signals_to_socketcan(self) -> None:
         args = build_parser().parse_args(["--can-channel", "can0"])

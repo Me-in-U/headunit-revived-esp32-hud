@@ -19,8 +19,10 @@ class RuntimeConfigTest(unittest.TestCase):
         obd_args = parser.parse_args(["--obd-port", "/dev/rfcomm0"])
         ble_args = parser.parse_args(["--obd-ble-mac", "AA:BB:CC:DD:EE:FF"])
         can_args = parser.parse_args(["--can-channel", "can0"])
+        dummy_args = parser.parse_args(["--dummy"])
 
-        self.assertTrue(dummy_enabled(default_args))
+        self.assertFalse(dummy_enabled(default_args))
+        self.assertTrue(dummy_enabled(dummy_args))
         self.assertTrue(obd_configured(obd_args))
         self.assertTrue(obd_configured(ble_args))
         self.assertTrue(can_configured(can_args))
