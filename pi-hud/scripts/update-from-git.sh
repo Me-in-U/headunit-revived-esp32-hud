@@ -1,6 +1,14 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+update_failed() {
+  local exit_code="$1"
+  local command="$2"
+  echo "[FAIL] update failed while running: ${command}" >&2
+  exit "${exit_code}"
+}
+trap 'update_failed "$?" "$BASH_COMMAND"' ERR
+
 ENV_FILE="${HEADUNIT_HUD_ENV_FILE:-}"
 if [ -z "${ENV_FILE}" ] && [ -r /etc/headunit-pi-hud.env ]; then
   ENV_FILE=/etc/headunit-pi-hud.env
@@ -23,6 +31,17 @@ truthy() {
 service_is_active() {
   local service="$1"
   systemctl is-active --quiet "${service}"
+}
+
+requirements_changed() {
+  if "${GIT[@]}" diff --quiet "${CURRENT_HEAD}" "${FETCHED_HEAD}" -- pi-hud/requirements.txt; then
+    return 1
+  fi
+  local status="$?"
+  if [ "${status}" -eq 1 ]; then
+    return 0
+  fi
+  return "${status}"
 }
 
 restart_service() {
@@ -68,6 +87,16 @@ if [ "${CURRENT_HEAD}" = "${FETCHED_HEAD}" ]; then
   exit 0
 fi
 
+REQUIREMENTS_CHANGED=0
+if requirements_changed; then
+  REQUIREMENTS_CHANGED=1
+else
+  status="$?"
+  if [ "${status}" -ne 1 ]; then
+    exit "${status}"
+  fi
+fi
+
 "${GIT[@]}" merge --ff-only FETCH_HEAD
 
 PYTHON="${HEADUNIT_HUD_PYTHON:-}"
@@ -80,7 +109,11 @@ if [ -z "${PYTHON}" ]; then
 fi
 
 if [ -f "${APP_DIR}/pi-hud/requirements.txt" ]; then
-  "${PYTHON}" -m pip install -r "${APP_DIR}/pi-hud/requirements.txt"
+  if [ "${REQUIREMENTS_CHANGED}" = "1" ]; then
+    "${PYTHON}" -m pip install -r "${APP_DIR}/pi-hud/requirements.txt"
+  else
+    echo "[OK] requirements unchanged; skipping pip install"
+  fi
 fi
 
 restart_service "${SERVICE}"

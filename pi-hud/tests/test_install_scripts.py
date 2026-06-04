@@ -278,6 +278,26 @@ class InstallScriptsTest(unittest.TestCase):
         self.assertIn("[WARN] updated git checkout, but failed to restart", update_script)
         self.assertIn("journalctl -u", update_script)
 
+    def test_git_update_skips_pip_when_requirements_are_unchanged(self) -> None:
+        pi_hud_root = Path(__file__).resolve().parents[1]
+        update_script = (pi_hud_root / "scripts" / "update-from-git.sh").read_text(encoding="utf-8")
+
+        self.assertIn("requirements_changed()", update_script)
+        self.assertIn('"${GIT[@]}" diff --quiet "${CURRENT_HEAD}" "${FETCHED_HEAD}" -- pi-hud/requirements.txt', update_script)
+        self.assertIn("REQUIREMENTS_CHANGED=0", update_script)
+        self.assertIn("REQUIREMENTS_CHANGED=1", update_script)
+        self.assertIn("requirements unchanged; skipping pip install", update_script)
+        self.assertLess(update_script.index("REQUIREMENTS_CHANGED=0"), update_script.index('"${GIT[@]}" merge --ff-only FETCH_HEAD'))
+        self.assertLess(update_script.index('"${GIT[@]}" merge --ff-only FETCH_HEAD'), update_script.index("pip install -r"))
+
+    def test_git_update_logs_the_failed_step_before_exiting(self) -> None:
+        pi_hud_root = Path(__file__).resolve().parents[1]
+        update_script = (pi_hud_root / "scripts" / "update-from-git.sh").read_text(encoding="utf-8")
+
+        self.assertIn("update_failed()", update_script)
+        self.assertIn("trap 'update_failed", update_script)
+        self.assertIn("[FAIL] update failed while running:", update_script)
+
     def test_git_update_leaves_manually_stopped_runtime_stopped(self) -> None:
         pi_hud_root = Path(__file__).resolve().parents[1]
         update_script = (pi_hud_root / "scripts" / "update-from-git.sh").read_text(encoding="utf-8")
