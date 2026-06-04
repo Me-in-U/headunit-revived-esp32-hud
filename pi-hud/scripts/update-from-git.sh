@@ -20,8 +20,17 @@ truthy() {
   esac
 }
 
+service_is_active() {
+  local service="$1"
+  systemctl is-active --quiet "${service}"
+}
+
 restart_service() {
   local service="$1"
+  if ! service_is_active "${service}"; then
+    echo "[OK] ${service} is not active; leaving it stopped after update"
+    return 0
+  fi
   if systemctl restart "${service}"; then
     return 0
   fi
@@ -74,9 +83,5 @@ if [ -f "${APP_DIR}/pi-hud/requirements.txt" ]; then
   "${PYTHON}" -m pip install -r "${APP_DIR}/pi-hud/requirements.txt"
 fi
 
-if [ "${SERVICE}" = "headunit-pi-hud.service" ]; then
-  restart_service headunit-pi-hud.service
-else
-  restart_service "${SERVICE}"
-fi
+restart_service "${SERVICE}"
 echo "[OK] updated ${APP_DIR} from ${CURRENT_HEAD} to ${FETCHED_HEAD}"

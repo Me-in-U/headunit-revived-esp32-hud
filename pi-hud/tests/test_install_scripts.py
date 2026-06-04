@@ -124,6 +124,13 @@ class InstallScriptsTest(unittest.TestCase):
 
         self.assertIn("WantedBy=multi-user.target", service_file)
 
+    def test_systemd_unit_does_not_restart_after_manual_hud_quit(self) -> None:
+        pi_hud_root = Path(__file__).resolve().parents[1]
+        service_file = (pi_hud_root / "systemd" / "headunit-pi-hud.service").read_text(encoding="utf-8")
+
+        self.assertIn("Restart=on-failure", service_file)
+        self.assertNotIn("Restart=always", service_file)
+
     def test_runtime_can_require_editor_layout_handoff_from_env(self) -> None:
         pi_hud_root = Path(__file__).resolve().parents[1]
         run_script = (pi_hud_root / "scripts" / "run-from-env.sh").read_text(encoding="utf-8")
@@ -240,6 +247,15 @@ class InstallScriptsTest(unittest.TestCase):
         self.assertIn("systemctl restart", update_script)
         self.assertIn("[WARN] updated git checkout, but failed to restart", update_script)
         self.assertIn("journalctl -u", update_script)
+
+    def test_git_update_leaves_manually_stopped_runtime_stopped(self) -> None:
+        pi_hud_root = Path(__file__).resolve().parents[1]
+        update_script = (pi_hud_root / "scripts" / "update-from-git.sh").read_text(encoding="utf-8")
+
+        self.assertIn("service_is_active()", update_script)
+        self.assertIn('systemctl is-active --quiet "${service}"', update_script)
+        self.assertIn("is not active; leaving it stopped after update", update_script)
+        self.assertLess(update_script.index("service_is_active()"), update_script.index("restart_service()"))
 
 
 if __name__ == "__main__":

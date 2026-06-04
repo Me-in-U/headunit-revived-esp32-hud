@@ -201,7 +201,7 @@ sudo pi-hud/scripts/install-pi.sh
 sudo pi-hud/scripts/install-pi.sh /opt/headunit-pi-hud
 ```
 
-설치 스크립트는 `/etc/headunit-pi-hud.env`를 만들고, 가능한 경우 iCar/ELM327와 CANable을 한 번 자동 탐색해서 설정값을 채운다. systemd unit은 Raspberry Pi OS Lite에서도 부팅 경로에 걸리도록 `multi-user.target`에 enable된다. 설치 스크립트는 기본적으로 `sudo`를 실행한 사용자를 service user로 쓰며, 직접 지정하려면 `sudo HEADUNIT_HUD_USER=<pi-login-user> pi-hud/scripts/install-pi.sh`처럼 실행한다. 설치 중 자동 탐색을 건너뛰려면 `sudo HEADUNIT_HUD_SKIP_AUTO_CONFIG=1 pi-hud/scripts/install-pi.sh`처럼 실행한다.
+설치 스크립트는 `/etc/headunit-pi-hud.env`를 만들고, 가능한 경우 iCar/ELM327와 CANable을 한 번 자동 탐색해서 설정값을 채운다. systemd unit은 Raspberry Pi OS Lite에서도 부팅 경로에 걸리도록 `multi-user.target`에 enable된다. 부팅 때 HUD는 자동 실행되지만, HUD 창에서 `Q` 또는 `ESC`로 정상 종료하면 비정상 종료가 아닌 한 다시 뜨지 않는다. 다시 켜려면 `sudo systemctl restart headunit-pi-hud.service`를 실행하거나 재부팅한다. 설치 스크립트는 기본적으로 `sudo`를 실행한 사용자를 service user로 쓰며, 직접 지정하려면 `sudo HEADUNIT_HUD_USER=<pi-login-user> pi-hud/scripts/install-pi.sh`처럼 실행한다. 설치 중 자동 탐색을 건너뛰려면 `sudo HEADUNIT_HUD_SKIP_AUTO_CONFIG=1 pi-hud/scripts/install-pi.sh`처럼 실행한다.
 
 장비를 나중에 꽂았거나 Bluetooth scan이 늦게 잡혔으면 Pi에서 자동 탐색을 다시 실행한다.
 

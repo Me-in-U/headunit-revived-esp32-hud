@@ -14,7 +14,7 @@ Environment=SDL_AUDIODRIVER=dummy
 ExecStartPre=-+/opt/headunit-pi-hud/pi-hud/scripts/setup-obd-from-env.sh
 ExecStartPre=-+/opt/headunit-pi-hud/pi-hud/scripts/setup-canable-from-env.sh
 ExecStart=/opt/headunit-pi-hud/pi-hud/scripts/run-from-env.sh
-Restart=always
+Restart=on-failure
 RestartSec=3
 SupplementaryGroups=dialout video render input bluetooth
 
