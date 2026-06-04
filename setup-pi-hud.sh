@@ -157,9 +157,11 @@ screen_test() {
   fi
   write_screen_test_env "${width}" "${height}"
   run_sudo systemctl stop headunit-pi-hud.service || true
-  echo "[OK] Starting direct HUD screen test; press Ctrl+C to exit."
+  echo "[OK] Starting direct HUD screen test; press ESC or Q in the HUD window to exit."
+  echo "[INFO] Ctrl+C only exits when this terminal has focus."
   echo "[INFO] This does not depend on systemd desktop session access."
   run_desktop_hud
+  echo "[OK] Screen test exited. Normal HUD service remains stopped; choose 4 to restart it."
 }
 
 auto_configure_hardware() {
