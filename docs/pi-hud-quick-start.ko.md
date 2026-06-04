@@ -37,7 +37,34 @@ sudo bash setup-pi-hud.sh
 6  상태 점검
 ```
 
-## 2. OBD/CAN 없이 화면만 테스트
+## 2. 레이아웃 에디터 수정 적용
+
+Windows 레이아웃 에디터에서 수정한 화면은 `Field Pack` zip으로 Pi에 적용한다.
+
+Windows에서 에디터를 열고 레이아웃을 수정한 뒤:
+
+```text
+Field Pack 버튼 -> headunit-pi-field-pack.zip 저장
+```
+
+zip 파일을 Pi로 복사한다. SSH 이름이 `user@hud`라면 Windows PowerShell에서:
+
+```powershell
+scp .\headunit-pi-field-pack.zip user@hud:~/
+```
+
+Pi 터미널에서 적용한다.
+
+```bash
+sudo /opt/headunit-pi-hud/.venv/bin/python \
+  /opt/headunit-pi-hud/pi-hud/scripts/apply-field-pack.py \
+  ~/headunit-pi-field-pack.zip
+sudo systemctl restart headunit-pi-hud.service
+```
+
+이미 iCar/CANable 설정을 해둔 Pi에서는 `--overwrite-env`를 붙이지 않는다. 붙이면 `/etc/headunit-pi-hud.env`가 예제값으로 덮일 수 있다.
+
+## 3. OBD/CAN 없이 화면만 테스트
 
 CANable과 iCar가 없어도 HUD 화면 테스트는 가능하다. 설치 직후 OBD/CAN 장비가 잡히지 않았으면 별도 설정 없이 dummy 화면으로 뜬다.
 
@@ -53,7 +80,7 @@ sudo bash setup-pi-hud.sh 2
 sudo bash setup-pi-hud.sh 6
 ```
 
-## 3. iCar/CANable 자동 설정
+## 4. iCar/CANable 자동 설정
 
 iCar와 CANable을 연결하고 차량은 IGN ON 상태로 둔다. 그 다음 실행한다.
 
@@ -69,13 +96,13 @@ sudo bash setup-pi-hud.sh 3
   --probe-display --probe-inputs
 ```
 
-## 4. 상태 확인
+## 5. 상태 확인
 
 ```bash
 sudo bash setup-pi-hud.sh 6
 ```
 
-## 5. 업데이트 확인
+## 6. 업데이트 확인
 
 자동 업데이트는 기본으로 켜져 있다. 바로 한 번 실행하려면:
 
