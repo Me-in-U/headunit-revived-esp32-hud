@@ -18,7 +18,12 @@ class InstallScriptsTest(unittest.TestCase):
         self.assertIn("systemctl enable headunit-pi-hud-update.timer", setup_script)
         self.assertIn("auto-configure-hardware.py", setup_script)
         self.assertIn("first-run-status.py", setup_script)
-        self.assertIn("journalctl -u headunit-pi-hud.service", setup_script)
+        self.assertIn("follow_journal()", setup_script)
+        self.assertIn('journalctl -u "${unit}" -f --no-pager', setup_script)
+        self.assertIn('trap \'kill "${pid}"', setup_script)
+        self.assertIn('wait "${pid}"', setup_script)
+        self.assertIn("Log view closed", setup_script)
+        self.assertIn('follow_journal headunit-pi-hud.service', setup_script)
         self.assertIn("journalctl -u headunit-pi-hud-update.service", setup_script)
 
     def test_pi_install_marks_runtime_helper_scripts_executable(self) -> None:

@@ -93,6 +93,25 @@ set_env_value() {
   fi
 }
 
+follow_journal() {
+  local unit="$1"
+  local pid status
+  echo "[INFO] Following ${unit} logs. Press Ctrl+C to return to the menu."
+  run_sudo journalctl -u "${unit}" -f --no-pager &
+  pid="$!"
+  trap 'kill "${pid}" 2>/dev/null || true' INT
+  set +e
+  wait "${pid}"
+  status="$?"
+  set -e
+  trap - INT
+  if [ "${status}" -eq 130 ] || [ "${status}" -eq 143 ]; then
+    echo "[OK] Log view closed."
+    return 0
+  fi
+  return 0
+}
+
 clear_screen_test_env() {
   run_sudo rm -f "${TEST_ENV_FILE}"
 }
@@ -183,7 +202,7 @@ restart_hud() {
 }
 
 show_logs() {
-  run_sudo journalctl -u headunit-pi-hud.service -f
+  follow_journal headunit-pi-hud.service
 }
 
 status_check() {
