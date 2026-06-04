@@ -64,12 +64,21 @@ chmod 0755 \
   "${APP_DIR}/pi-hud/scripts/acceptance-check.py" \
   "${APP_DIR}/pi-hud/scripts/summarize-can-baseline.py" \
   "${APP_DIR}/pi-hud/scripts/scan-ble-obd.py" \
+  "${APP_DIR}/pi-hud/scripts/auto-configure-hardware.py" \
   "${APP_DIR}/pi-hud/scripts/build-field-pack.py" \
   "${APP_DIR}/pi-hud/scripts/apply-field-pack.py" \
   "${APP_DIR}/pi-hud/scripts/diagnose-inputs.py" \
   "${APP_DIR}/pi-hud/scripts/verify-layout.py" \
   "${APP_DIR}/pi-hud/scripts/update-from-git.sh" \
   "${APP_DIR}/pi-hud/scripts/probe-bridge.py"
+
+if [ "${HEADUNIT_HUD_SKIP_AUTO_CONFIG:-0}" != "1" ]; then
+  "${APP_DIR}/.venv/bin/python" \
+    "${APP_DIR}/pi-hud/scripts/auto-configure-hardware.py" \
+    --apply \
+    --no-restart \
+    --env-file "${ENV_FILE}" || true
+fi
 
 sed \
   -e "s|^User=.*|User=${SERVICE_USER}|" \
@@ -92,7 +101,7 @@ systemctl enable headunit-pi-hud-update.timer
 echo "Installed ${SERVICE_FILE}"
 echo "Installed ${UPDATE_SERVICE_FILE}"
 echo "Installed ${UPDATE_TIMER_FILE}"
-echo "Edit ${ENV_FILE}, then run:"
+echo "Hardware auto-config was attempted. Edit ${ENV_FILE} only if iCar/CANable values are still missing, then run:"
 echo "  sudo systemctl restart headunit-pi-hud.service"
 echo "  sudo journalctl -u headunit-pi-hud.service -f"
-echo "Enable git updates by setting HEADUNIT_HUD_AUTO_UPDATE=1 in ${ENV_FILE}."
+echo "Git updates are enabled by default with HEADUNIT_HUD_AUTO_UPDATE=1 in ${ENV_FILE}."

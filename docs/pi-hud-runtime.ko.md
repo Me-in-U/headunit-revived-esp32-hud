@@ -201,14 +201,35 @@ sudo pi-hud/scripts/install-pi.sh
 sudo pi-hud/scripts/install-pi.sh /opt/headunit-pi-hud
 ```
 
-설치 후 `/etc/headunit-pi-hud.env`에서 실제 연결 상태에 맞게 수정한다. systemd unit은 Raspberry Pi OS Lite에서도 부팅 경로에 걸리도록 `multi-user.target`에 enable된다. 설치 스크립트는 기본적으로 `sudo`를 실행한 사용자를 service user로 쓰며, 직접 지정하려면 `sudo HEADUNIT_HUD_USER=<pi-login-user> pi-hud/scripts/install-pi.sh`처럼 실행한다.
+설치 스크립트는 `/etc/headunit-pi-hud.env`를 만들고, 가능한 경우 iCar/ELM327와 CANable을 한 번 자동 탐색해서 설정값을 채운다. systemd unit은 Raspberry Pi OS Lite에서도 부팅 경로에 걸리도록 `multi-user.target`에 enable된다. 설치 스크립트는 기본적으로 `sudo`를 실행한 사용자를 service user로 쓰며, 직접 지정하려면 `sudo HEADUNIT_HUD_USER=<pi-login-user> pi-hud/scripts/install-pi.sh`처럼 실행한다. 설치 중 자동 탐색을 건너뛰려면 `sudo HEADUNIT_HUD_SKIP_AUTO_CONFIG=1 pi-hud/scripts/install-pi.sh`처럼 실행한다.
+
+장비를 나중에 꽂았거나 Bluetooth scan이 늦게 잡혔으면 Pi에서 자동 탐색을 다시 실행한다.
+
+```bash
+sudo /opt/headunit-pi-hud/.venv/bin/python \
+  /opt/headunit-pi-hud/pi-hud/scripts/auto-configure-hardware.py \
+  --apply
+```
+
+자동 탐색이 성공하면 `/etc/headunit-pi-hud.env`에 아래 값들이 채워진다.
 
 ```bash
 HEADUNIT_HUD_OBD_PORT=/dev/rfcomm0
+HEADUNIT_HUD_ICAR_MAC=AA:BB:CC:DD:EE:FF
 HEADUNIT_HUD_CAN_CHANNEL=can0
 HEADUNIT_HUD_CAN_BITRATE=500000
 HEADUNIT_HUD_CAN_LISTEN_ONLY=on
 ```
+
+자동 탐색은 Bluetooth 장치 이름에 `iCar`, `OBD`, `ELM327`, `V-LINK`, `Vgate` 같은 단어가 있는 후보가 정확히 하나일 때만 iCar/ELM327로 채택한다. rfcomm probe가 실패하면 BLE GATT characteristic을 검사해서 RX/TX UUID를 찾고, `ATI`, `0100` probe가 통과하면 BLE 설정을 저장한다. CANable은 `ip link`에서 `can0` 같은 SocketCAN interface를 찾고 500 kbit/s listen-only로 올린 뒤 수신 probe를 시도한다.
+
+자동 업데이트는 기본으로 켜져 있다.
+
+```bash
+HEADUNIT_HUD_AUTO_UPDATE=1
+```
+
+`headunit-pi-hud-update.timer`가 주기적으로 git fast-forward update를 확인하고, requirements를 다시 설치한 뒤 HUD 서비스를 재시작한다. 자동 업데이트를 끄려면 `/etc/headunit-pi-hud.env`에서 `HEADUNIT_HUD_AUTO_UPDATE=0`으로 바꾼다.
 
 OBD 또는 CAN 장치가 아직 없으면 해당 값을 비워도 Pi HUD는 실행된다. 단, 둘 다 비어 있으면 dummy source가 들어와 개발용 화면처럼 보인다. OBD/CAN 값을 설정한 직후의 초기 상태는 `configured`로 표시되며, 실제 응답을 받으면 각 source가 `live`로 바뀐다. 따라서 `configured`는 장치 경로가 설정됐다는 뜻이지 실차 값 수신 완료라는 뜻은 아니다. Dummy 값은 fallback 용도이며, `source=pi-obd` 또는 `source=pi-local` 같은 Pi 로컬 입력이 활성화된 뒤에는 기존 live 값을 덮지 않고 비어 있는 field만 채운다. 실사용 모드처럼 dummy source가 꺼진 상태에서는 layout JSON의 샘플 내비 데이터와 실차 입력이 필요한 차량 샘플값(speed/RPM/coolant/voltage/fuel/gear/ATF/pedal/backup speed)을 시작 상태에서 지운다. Android 브릿지가 실제 `active=true` navigation packet을 보내기 전까지는 이전/샘플 경로 안내가 표시되지 않아야 하고, Pi OBD speed가 없거나 stale이면 Android GPS speed는 `speed_kmh_backup`으로만 fallback된다.
 
@@ -278,9 +299,10 @@ HEADUNIT_HUD_OBD_BLE_TX_UUID=0000fff2-0000-1000-8000-00805f9b34fb
 
 `HEADUNIT_HUD_OBD_PORT`가 설정되어 있으면 serial/rfcomm이 우선이고 BLE 설정은 쓰지 않는다. BLE MAC만 있고 UUID가 비어 있으면 HUD는 계속 뜨지만 OBD 상태는 `ble-config-missing`으로 표시된다.
 
-BLE MAC은 보이지만 RX/TX UUID를 모르면 Pi에서 GATT characteristic 후보를 먼저 확인한다.
+BLE MAC은 보이지만 RX/TX UUID를 모르면 Pi에서 자동 탐색을 먼저 다시 실행한다. 특정 MAC만 직접 확인해야 할 때는 GATT characteristic 후보를 별도로 확인한다.
 
 ```bash
+/opt/headunit-pi-hud/.venv/bin/python /opt/headunit-pi-hud/pi-hud/scripts/auto-configure-hardware.py --apply --force
 /opt/headunit-pi-hud/.venv/bin/python /opt/headunit-pi-hud/pi-hud/scripts/scan-ble-obd.py AA:BB:CC:DD:EE:FF
 ```
 

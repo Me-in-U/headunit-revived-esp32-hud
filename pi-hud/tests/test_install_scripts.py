@@ -23,6 +23,7 @@ class InstallScriptsTest(unittest.TestCase):
             "acceptance-check.py",
             "summarize-can-baseline.py",
             "scan-ble-obd.py",
+            "auto-configure-hardware.py",
             "build-field-pack.py",
             "apply-field-pack.py",
         ]
@@ -127,7 +128,7 @@ class InstallScriptsTest(unittest.TestCase):
         self.assertIn("HEADUNIT_HUD_LANGUAGE=ko", env_example)
         self.assertIn("ko or en", env_example)
 
-    def test_pi_install_sets_up_opt_in_git_auto_update_timer(self) -> None:
+    def test_pi_install_sets_up_default_enabled_git_auto_update_timer(self) -> None:
         pi_hud_root = Path(__file__).resolve().parents[1]
         install_script = (pi_hud_root / "scripts" / "install-pi.sh").read_text(encoding="utf-8")
         env_example = (pi_hud_root / "config" / "pi-hud.env.example").read_text(encoding="utf-8")
@@ -140,9 +141,18 @@ class InstallScriptsTest(unittest.TestCase):
         self.assertIn("headunit-pi-hud-update.service", install_script)
         self.assertIn("headunit-pi-hud-update.timer", install_script)
         self.assertIn("systemctl enable headunit-pi-hud-update.timer", install_script)
-        self.assertIn("HEADUNIT_HUD_AUTO_UPDATE=0", env_example)
+        self.assertIn("HEADUNIT_HUD_AUTO_UPDATE=1", env_example)
         self.assertIn("HEADUNIT_HUD_GIT_REMOTE=origin", env_example)
         self.assertIn("HEADUNIT_HUD_GIT_BRANCH=main", env_example)
+
+    def test_pi_install_runs_best_effort_hardware_autoconfig(self) -> None:
+        pi_hud_root = Path(__file__).resolve().parents[1]
+        install_script = (pi_hud_root / "scripts" / "install-pi.sh").read_text(encoding="utf-8")
+
+        self.assertIn("auto-configure-hardware.py", install_script)
+        self.assertIn("HEADUNIT_HUD_SKIP_AUTO_CONFIG", install_script)
+        self.assertIn("--apply", install_script)
+        self.assertIn("--no-restart", install_script)
 
     def test_git_update_script_fast_forwards_and_restarts_runtime_only_when_enabled(self) -> None:
         pi_hud_root = Path(__file__).resolve().parents[1]
