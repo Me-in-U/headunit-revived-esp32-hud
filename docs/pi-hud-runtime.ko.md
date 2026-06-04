@@ -229,7 +229,7 @@ HEADUNIT_HUD_CAN_LISTEN_ONLY=on
 HEADUNIT_HUD_AUTO_UPDATE=1
 ```
 
-`headunit-pi-hud-update.timer`가 주기적으로 git fast-forward update를 확인하고, requirements를 다시 설치한 뒤 HUD 서비스를 재시작한다. 자동 업데이트를 끄려면 `/etc/headunit-pi-hud.env`에서 `HEADUNIT_HUD_AUTO_UPDATE=0`으로 바꾼다.
+`headunit-pi-hud-update.timer`가 부팅 3분 뒤, 이후 5분마다 git fast-forward update를 확인하고, requirements를 다시 설치한 뒤 HUD 서비스를 재시작한다. 자동 업데이트를 끄려면 `/etc/headunit-pi-hud.env`에서 `HEADUNIT_HUD_AUTO_UPDATE=0`으로 바꾼다.
 
 OBD 또는 CAN 장치가 아직 없으면 해당 값을 비워도 Pi HUD는 실행된다. 단, 둘 다 비어 있으면 dummy source가 들어와 개발용 화면처럼 보인다. OBD/CAN 값을 설정한 직후의 초기 상태는 `configured`로 표시되며, 실제 응답을 받으면 각 source가 `live`로 바뀐다. 따라서 `configured`는 장치 경로가 설정됐다는 뜻이지 실차 값 수신 완료라는 뜻은 아니다. Dummy 값은 fallback 용도이며, `source=pi-obd` 또는 `source=pi-local` 같은 Pi 로컬 입력이 활성화된 뒤에는 기존 live 값을 덮지 않고 비어 있는 field만 채운다. 실사용 모드처럼 dummy source가 꺼진 상태에서는 layout JSON의 샘플 내비 데이터와 실차 입력이 필요한 차량 샘플값(speed/RPM/coolant/voltage/fuel/gear/ATF/pedal/backup speed)을 시작 상태에서 지운다. Android 브릿지가 실제 `active=true` navigation packet을 보내기 전까지는 이전/샘플 경로 안내가 표시되지 않아야 하고, Pi OBD speed가 없거나 stale이면 Android GPS speed는 `speed_kmh_backup`으로만 fallback된다.
 

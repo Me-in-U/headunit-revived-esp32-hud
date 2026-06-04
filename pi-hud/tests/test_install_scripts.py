@@ -173,6 +173,14 @@ class InstallScriptsTest(unittest.TestCase):
         self.assertIn("HEADUNIT_HUD_GIT_REMOTE=origin", env_example)
         self.assertIn("HEADUNIT_HUD_GIT_BRANCH=main", env_example)
 
+    def test_pi_auto_update_timer_checks_every_five_minutes(self) -> None:
+        pi_hud_root = Path(__file__).resolve().parents[1]
+        update_timer = (pi_hud_root / "systemd" / "headunit-pi-hud-update.timer").read_text(encoding="utf-8")
+
+        self.assertIn("OnBootSec=3min", update_timer)
+        self.assertIn("OnUnitActiveSec=5min", update_timer)
+        self.assertNotIn("OnUnitActiveSec=30min", update_timer)
+
     def test_pi_install_runs_best_effort_hardware_autoconfig(self) -> None:
         pi_hud_root = Path(__file__).resolve().parents[1]
         install_script = (pi_hud_root / "scripts" / "install-pi.sh").read_text(encoding="utf-8")

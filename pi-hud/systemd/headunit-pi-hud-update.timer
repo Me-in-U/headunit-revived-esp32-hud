@@ -3,7 +3,7 @@ Description=Periodic Headunit Raspberry Pi HUD git update check
 
 [Timer]
 OnBootSec=3min
-OnUnitActiveSec=30min
+OnUnitActiveSec=5min
 Persistent=true
 
 [Install]
