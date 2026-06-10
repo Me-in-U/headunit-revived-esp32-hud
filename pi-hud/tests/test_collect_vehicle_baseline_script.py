@@ -2,9 +2,11 @@ from __future__ import annotations
 
 import importlib.util
 import os
+import sys
 import tempfile
 import unittest
 from pathlib import Path
+from types import SimpleNamespace
 from unittest.mock import patch
 import json
 
@@ -134,13 +136,86 @@ class CollectVehicleBaselineScriptTest(unittest.TestCase):
             )
             args = module.build_parser().parse_args(["--vehicle-profile", str(profile_path)])
 
-            with patch.object(module, "collect_obd", return_value={"configured": False, "records": []}) as collect_obd:
+            with (
+                patch.object(module, "collect_obd", return_value={"configured": False, "records": []}) as collect_obd,
+                patch.object(module, "collect_can", return_value={"configured": False, "records": []}) as collect_can,
+            ):
                 report = module.build_report(args)
 
         self.assertEqual("test_vehicle", report["vehicle"])
-        self.assertNotIn("can", report)
+        self.assertIn("can", report)
         collect_obd.assert_called_once()
+        collect_can.assert_called_once()
         self.assertEqual(["ATSH7D1", "ATCRA7D9", "220104"], collect_obd.call_args.args[1][-3:])
+
+    def test_can_environment_is_loaded_before_parser_defaults(self) -> None:
+        module = load_collect_vehicle_baseline_module()
+        with tempfile.TemporaryDirectory() as temp_dir:
+            env_file = Path(temp_dir) / "headunit-pi-hud.env"
+            env_file.write_text(
+                "\n".join(
+                    [
+                        "HEADUNIT_HUD_CAN_CHANNEL=can0",
+                        "HEADUNIT_HUD_CAN_BASELINE_DURATION=7.5",
+                        "HEADUNIT_HUD_CAN_BASELINE_MAX_FRAMES=123",
+                    ]
+                ),
+                encoding="utf-8",
+            )
+
+            clean_env = {
+                key: value
+                for key, value in os.environ.items()
+                if not key.startswith("HEADUNIT_HUD_")
+            }
+            clean_env["HEADUNIT_HUD_ENV_FILE"] = str(env_file)
+            with patch.dict(os.environ, clean_env, clear=True):
+                module.load_runtime_environment()
+                args = module.build_parser().parse_args([])
+
+        self.assertEqual("can0", args.can_channel)
+        self.assertEqual(7.5, args.can_duration)
+        self.assertEqual(123, args.can_max_frames)
+
+    def test_collect_can_records_socketcan_frames(self) -> None:
+        module = load_collect_vehicle_baseline_module()
+
+        class FakeMessage:
+            def __init__(self, arbitration_id: int, data: bytes, timestamp: float) -> None:
+                self.arbitration_id = arbitration_id
+                self.data = data
+                self.timestamp = timestamp
+                self.is_extended_id = False
+                self.dlc = len(data)
+
+        class FakeBus:
+            def __init__(self, **kwargs: object) -> None:
+                self.kwargs = kwargs
+                self.messages = [
+                    FakeMessage(0x316, bytes([0x05, 0x20, 0x00, 0xFF]), 1.0),
+                    FakeMessage(0x329, bytes([0x10, 0x00]), 1.1),
+                ]
+                self.shutdown_called = False
+
+            def recv(self, timeout: float) -> FakeMessage | None:
+                return self.messages.pop(0) if self.messages else None
+
+            def shutdown(self) -> None:
+                self.shutdown_called = True
+
+        fake_can = SimpleNamespace(interface=SimpleNamespace(Bus=lambda **kwargs: FakeBus(**kwargs)))
+        args = module.build_parser().parse_args(["--can-channel", "can0", "--can-duration", "0.1", "--can-max-frames", "2"])
+
+        with patch.dict(sys.modules, {"can": fake_can}):
+            result = module.collect_can(args)
+
+        self.assertTrue(result["configured"])
+        self.assertEqual("socketcan", result["transport"])
+        self.assertEqual("can0", result["channel"])
+        self.assertEqual(2, result["frame_count"])
+        self.assertTrue(result["truncated"])
+        self.assertEqual("0x316", result["records"][0]["id"])
+        self.assertEqual("05 20 00 FF", result["records"][0]["data"])
 
 
 if __name__ == "__main__":

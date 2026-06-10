@@ -19,6 +19,9 @@ class ObdDtcTest(unittest.TestCase):
     def test_ignore_unrelated_response(self) -> None:
         self.assertEqual([], parse_dtc_response("41 0D 2A", "43"))
 
+    def test_repeated_empty_dtc_responses_are_empty(self) -> None:
+        self.assertEqual([], parse_dtc_response("43 00\n43 00", "43"))
+
 
 class FakeSerialLink:
     def __init__(self, response: bytes | list[bytes]) -> None:

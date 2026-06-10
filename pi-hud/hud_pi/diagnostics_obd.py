@@ -46,7 +46,8 @@ class _BleElmCommandLink:
 async def _run_ble_elm_commands(mac: str, rx_uuid: str, tx_uuid: str, commands: list[str] | tuple[str, ...], timeout: float) -> list[str]:
     from bleak import BleakClient
 
-    async with BleakClient(mac, timeout=timeout) as client:
+    target = await _resolve_ble_device(mac, timeout)
+    async with BleakClient(target, timeout=timeout) as client:
         link = _BleElmCommandLink(client, rx_uuid, tx_uuid, timeout=timeout)
         await link.start()
         for command in ("ATZ", "ATE0", "ATL0"):
@@ -64,6 +65,22 @@ def run_ble_elm_commands(mac: str, rx_uuid: str, tx_uuid: str, commands: list[st
     if not rx_uuid or not tx_uuid:
         raise ValueError("missing RX/TX UUID")
     return asyncio.run(_run_ble_elm_commands(mac, rx_uuid, tx_uuid, commands, timeout))
+
+
+async def _resolve_ble_device(identifier: str, timeout: float) -> Any:
+    from bleak import BleakScanner
+
+    wanted = str(identifier or "").strip()
+    if not wanted:
+        raise ValueError("missing BLE MAC")
+    devices = await BleakScanner.discover(timeout=timeout)
+    wanted_upper = wanted.upper()
+    for device in devices:
+        address = str(getattr(device, "address", "") or "")
+        name = str(getattr(device, "name", "") or "")
+        if address.upper() == wanted_upper or name.upper() == wanted_upper:
+            return device
+    return wanted
 
 
 def probe_obd(port: str, baudrate: int = 38400, timeout: float = 2.0) -> DiagnosticResult:
