@@ -318,14 +318,25 @@ BLE MAC은 보이지만 RX/TX UUID를 모르면 Pi에서 자동 탐색을 먼저
 
 실차 CAN/OBD 증거 수집은 Windows 레이아웃 에디터가 우선 경로다. 에디터의 `Connection` 탭에서 OBD BLE와 CANable USB/SLCAN을 연결하고, `Simulation`을 켜면 live 값이 같은 Pi `HudRenderer` preview에 transient override로 들어간다. 이 값은 저장 파일을 dirty로 만들지 않으며, `Copy Live Sample`을 누른 경우에만 현재 live sample이 layout `dummy_data`에 기록된다. CAN 후보 ID, changing byte, sample payload, decoded preview, `confirmed:true` profile signal 작성은 `CAN Analysis` 탭에서 한다. OBD adapter identity, protocol, supported PID bitmap, DTC, probe command 관리는 `OBD Analysis` 탭에서 한다.
 
-Pi 쪽 `collect-vehicle-baseline.py`는 이제 OBD 증거만 수집하는 유지보수용 fallback이다. CAN frame 수집, ID별 빈도, changing byte 분석은 Pi에서 하지 않고 Windows 에디터의 `CAN Analysis` 탭에서 한다.
+Pi 쪽 `collect-vehicle-baseline.py`는 OBD 증거와 짧은 SocketCAN raw frame baseline을 같은 JSON에 저장할 수 있다. Windows 에디터의 `CAN Analysis` 탭이 후보 ID, changing byte, profile signal 작성의 우선 경로이지만, Pi에 CANable을 꽂아둔 현장에서는 아래 명령으로 `can0` evidence를 먼저 남겨둘 수 있다.
 
 ```bash
 /opt/headunit-pi-hud/.venv/bin/python /opt/headunit-pi-hud/pi-hud/scripts/collect-vehicle-baseline.py \
+  --scenario idle \
+  --can-channel can0 \
+  --can-duration 30 \
   --output /tmp/avante-hd-baseline.json
 ```
 
-이 명령도 `/etc/headunit-pi-hud.env` 또는 `HEADUNIT_HUD_ENV_FILE`을 먼저 읽어서 `HEADUNIT_HUD_OBD_PORT`, `HEADUNIT_HUD_OBD_BAUD`, `HEADUNIT_HUD_OBD_BLE_*`를 기본값으로 쓴다. 필요하면 `--obd-port`, `--obd-baud`, `--obd-ble-mac`, `--obd-ble-rx-uuid`, `--obd-ble-tx-uuid`로 임시 override할 수 있다. iCar/ELM327의 `ATI`, `ATDP`, supported PID bitmap, 표준 PID, DTC raw response를 JSON으로 저장한다. Serial/rfcomm이 설정되어 있으면 serial transport를 우선하고, serial이 비어 있을 때 BLE MAC이 있으면 BLE transport로 OBD baseline을 수집한다. 기본 표준 PID/DTC 명령 뒤에는 차량 profile의 `obd_probe_commands`가 이어서 실행된다. 아반떼 HD profile에는 `7E0/7E8 21 01`, `21 02`, `21 14`, `7D1/7D9 21 01`, `22 0104`, `7C6/7CE 22 B002` 후보가 들어 있지만 모두 `confirmed:false`이며, HUD 상시 표시값으로 쓰기 전에 Windows 에디터에서 raw response와 값 범위를 실차 확인해야 한다. 이 파일은 실제 차량/어댑터 응답 증거이므로 repo에는 commit하지 않는다.
+이 명령도 `/etc/headunit-pi-hud.env` 또는 `HEADUNIT_HUD_ENV_FILE`을 먼저 읽어서 `HEADUNIT_HUD_OBD_PORT`, `HEADUNIT_HUD_OBD_BAUD`, `HEADUNIT_HUD_OBD_BLE_*`, `HEADUNIT_HUD_CAN_CHANNEL`을 기본값으로 쓴다. 필요하면 `--obd-port`, `--obd-baud`, `--obd-ble-mac`, `--obd-ble-rx-uuid`, `--obd-ble-tx-uuid`, `--can-channel`, `--can-duration`, `--can-max-frames`로 임시 override할 수 있다. iCar/ELM327의 `ATI`, `ATDP`, supported PID bitmap, 표준 PID, DTC raw response와 CAN frame record를 JSON으로 저장한다. Serial/rfcomm이 설정되어 있으면 serial transport를 우선하고, serial이 비어 있을 때 BLE MAC이 있으면 BLE transport로 OBD baseline을 수집한다. 기본 표준 PID/DTC 명령 뒤에는 차량 profile의 `obd_probe_commands`가 이어서 실행된다. 아반떼 HD profile에는 `7E0/7E8 21 01`, `21 02`, `21 14`, `7D1/7D9 21 01`, `22 0104`, `7C6/7CE 22 B002` 후보가 들어 있지만 모두 `confirmed:false`이며, HUD 상시 표시값으로 쓰기 전에 Windows 에디터에서 raw response와 값 범위를 실차 확인해야 한다. 이 파일은 실제 차량/어댑터 응답 증거이므로 repo에는 commit하지 않는다.
+
+수집한 JSON에 CAN records가 있으면 바로 요약 파일을 만든다.
+
+```bash
+/opt/headunit-pi-hud/.venv/bin/python /opt/headunit-pi-hud/pi-hud/scripts/summarize-can-baseline.py \
+  /tmp/avante-hd-baseline.json \
+  --output /tmp/avante-hd-baseline-can-summary.json
+```
 
 레이아웃을 Pi에 올리기 전 실제 1920x480 렌더러로 검증:
 

@@ -71,6 +71,8 @@ mode: listen-only / no transmit
 termination: OFF
 ```
 
+Car Scanner가 사용자 차량을 ISO-15765-4, 11bit ID, 500 kbaud로 확인했으므로 DLC `6/14` 표준 진단 CAN의 첫 bitrate는 500k로 둔다.
+
 송신 기능, replay, transmit 버튼은 누르지 않는다.
 
 ## 4. 첫 프레임 확인
@@ -130,6 +132,24 @@ ID       DLC  DATA
 | `09_warning_self_test.log` | IGN ON self-test, 시동, 경고등 소등 과정 | battery/oil/check engine/EPS/ABS/SRS/coolant cluster 후보 |
 
 주행 로그는 안전한 장소에서 동승자 또는 고정된 노트북으로 기록한다. 운전자가 노트북을 조작하지 않는다.
+
+Pi + SocketCAN으로 바로 남길 때는 같은 시나리오 이름을 JSON에도 넣는다.
+
+```bash
+pi-hud/scripts/setup-canable-from-env.sh
+
+python pi-hud/scripts/collect-vehicle-baseline.py \
+  --scenario 02_idle \
+  --can-channel can0 \
+  --can-duration 60 \
+  --output vehicle-baseline/02_idle.json
+
+python pi-hud/scripts/summarize-can-baseline.py \
+  vehicle-baseline/02_idle.json \
+  --output vehicle-baseline/02_idle-can-summary.json
+```
+
+OBD를 아직 같이 연결하지 않았거나 CAN frame만 먼저 보고 싶으면 `--skip-obd`를 추가한다. 반대로 OBD baseline만 남길 때는 `--skip-can`을 추가한다.
 
 ## 7. iCar Pro 2S와 같이 쓸 때
 

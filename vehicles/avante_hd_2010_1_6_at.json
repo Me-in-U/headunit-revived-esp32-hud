@@ -6,6 +6,7 @@
     "abs": true,
     "esc_tcs": null,
     "tpms": false,
+    "obd_protocol": "ISO-15765-4 CAN 11bit 500 kbaud",
     "gear_range_display": "P/R/N/D/3/2/L",
     "dlc_pins": [16, 15, 14, 12, 8, 6, 5, 4, 3],
     "warning_lamps": [

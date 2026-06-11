@@ -24,6 +24,7 @@ Pi HUD 런타임은 모든 항목을 hardcode-visible로 켜지 말고, 먼저 �
 | --- | --- | --- |
 | 연식/차종 | 2010 Avante HD | OBDb/Pelican의 2010 Elantra 후보를 우선 검증한다. |
 | 엔진/변속기 | 1.6 gasoline automatic | A4CF1 가능성이 높다. A4CF2 전용 자료는 참고만 하고 실차 검증한다. |
+| OBD2 protocol | ISO-15765-4 CAN, 11bit ID, 500 kbaud | Car Scanner 실차 연결에서 확인. 표준 OBD 진단 CAN은 500k 기준으로 본다. |
 | ABS | 있음 | `7D1/7D9` ABS wheel speed/brake 후보를 검증할 가치가 있다. |
 | ESC/TCS | 미확인 | steering angle, brake pressure, TCS switch는 응답하지 않을 수 있다. |
 | TPMS | 없음 | TPMS PID 후보는 우선순위에서 제외한다. |

@@ -11,6 +11,7 @@
 | 항목 | 값 | CAN 조사 영향 |
 | --- | --- | --- |
 | 차량 | 2010 Avante HD 1.6 gasoline automatic | 국내 1.6/A4CF1 기준으로 본다. |
+| OBD2 protocol | ISO-15765-4 CAN, 11bit ID, 500 kbaud | Car Scanner 실차 연결에서 확인. DLC `6/14` 표준 진단 CAN의 1차 bitrate는 500k로 둔다. |
 | ABS | 있음 | ABS wheel speed 후보는 실제 응답 가능성이 있다. |
 | ESC/TCS | 미확인 | ESC/TCS 전용 brake pressure, steering angle, TCS switch는 장착 여부를 먼저 확인한다. |
 | TPMS | 없음 | TPMS CAN/OBD 후보는 이번 차량에서는 제외한다. |
@@ -91,17 +92,18 @@ HD 전용 DBC가 없으므로 아래는 **확정 ID가 아니라 실차 로그�
 
 ## OBD 포트와 bus 주의점
 
-표준 OBD-II 진단 CAN은 보통 DLC pin `6` CAN-H, pin `14` CAN-L이다. 다만 일부 국산차/장착 매뉴얼 자료에서는 body 또는 convenience CAN을 DLC의 vendor-specific pin에 노출하는 경우가 있다.
+표준 OBD-II 진단 CAN은 보통 DLC pin `6` CAN-H, pin `14` CAN-L이다. 사용자 차량은 Car Scanner에서 ISO-15765-4, 11bit ID, 500 kbaud로 확인됐으므로 표준 진단 CAN 확인은 500k부터 시작한다. 다만 일부 국산차/장착 매뉴얼 자료에서는 body 또는 convenience CAN을 DLC의 vendor-specific pin에 노출하는 경우가 있다.
 
 Qvia K-900 장착 매뉴얼은 Avante HD 2006-2010에 대해 `C-CAN`, OBD 위치, LOW pin `11`, HIGH pin `3`을 적고 있다. 이 자료는 aftermarket remote-start/경보기 장착용이므로 진단 CAN 표준 pinout으로 일반화하면 안 된다. 사용자 차량에서 확인된 DLC populated pin은 `16`, `15`, `14`, `12`, `8`, `6`, `5`, `4`, `3`이고 pin `11`이 없으므로, 이 차량에서는 `3/11` C-CAN 후보를 우선 제외한다.
 
 실차에서는 다음 순서로 확인한다.
 
-1. OBD 스캐너/ELM327로 표준 PID가 읽히는지 확인한다.
+1. OBD 스캐너/ELM327로 표준 PID가 읽히는지 확인한다. 현재 Android/iOS Vlink 동글 + Car Scanner에서는 표준 OBD 연결이 확인됐다.
 2. CAN adapter를 listen-only로 놓고 DLC `6/14`, 500 kbps부터 passive log를 본다.
-3. frame이 없거나 기대 신호가 부족하면 배선도 기준으로 모듈 커넥터 쪽 CAN pair를 찾는다. 현재 차량의 DLC에서는 pin `3`만으로 CAN pair를 만들 수 없다.
-4. 모르는 frame은 절대 송신하지 않는다. 먼저 listen-only로 수집한다.
-5. bus 저항은 전원 OFF 상태에서 CAN-H/CAN-L 사이 약 60 ohm 수준인지 확인한다.
+3. frame이 없거나 기대 신호가 부족하면 먼저 CANH/CANL/GND, H/L swap, termination OFF, splitter 접촉, IGN/engine 상태를 재확인한다. OBD 동글이 정상 동작해도 CANable 배선이 같은 bus를 안정적으로 물고 있다는 뜻은 아니다.
+4. 그래도 frame이 없으면 배선도 기준으로 모듈 커넥터 쪽 CAN pair를 찾는다. 현재 차량의 DLC에서는 pin `3`만으로 CAN pair를 만들 수 없다.
+5. 모르는 frame은 절대 송신하지 않는다. 먼저 listen-only로 수집한다.
+6. bus 저항은 전원 OFF 상태에서 CAN-H/CAN-L 사이 약 60 ohm 수준인지 확인한다.
 
 ## 로깅 시나리오
 
