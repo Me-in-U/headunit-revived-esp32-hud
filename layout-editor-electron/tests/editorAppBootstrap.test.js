@@ -5,7 +5,7 @@ const Bootstrap = require("../src/renderer/editorAppBootstrap.js");
 
 test("initializeEditor binds UI loads default layout and renders initial preview", async () => {
   const calls = [];
-  const state = { appLanguage: "ko" };
+  const state = { appLanguage: "ko", vehicleLive: {} };
   const dom = { languageSelect: { value: "" } };
   const metadata = { palette: { Primary: [], Navigation: [] }, vehicleProfiles: { avante: {} } };
   const loaded = { ok: true, path: "default.json", layout: { id: "layout" } };
@@ -22,6 +22,7 @@ test("initializeEditor binds UI loads default layout and renders initial preview
       },
     },
     handlers: {
+      onVehicleLiveEvent() {},
       openLayout() {},
       saveLayout() {},
     },
@@ -33,6 +34,10 @@ test("initializeEditor binds UI loads default layout and renders initial preview
       async loadDefault() {
         calls.push(["loadDefault"]);
         return loaded;
+      },
+      onVehicleLiveEvent(handler) {
+        calls.push(["onVehicleLiveEvent", handler.name]);
+        return "unsubscribe-live";
       },
     },
     applyLanguage() {
@@ -59,9 +64,10 @@ test("initializeEditor binds UI loads default layout and renders initial preview
   assert.equal(state.metadata, metadata);
   assert.equal(state.vehicleProfiles, metadata.vehicleProfiles);
   assert.equal(state.activeCategory, "Primary");
+  assert.equal(state.vehicleLive.unsubscribe, "unsubscribe-live");
   assert.deepEqual(calls, [
     ["bindDom", true, "document"],
-    ["bindActions", true, "window", true, ["openLayout", "saveLayout"]],
+    ["bindActions", true, "window", true, ["onVehicleLiveEvent", "openLayout", "saveLayout"]],
     ["applyLanguage"],
     ["setStatus", "t:loading"],
     ["metadata"],
@@ -69,11 +75,12 @@ test("initializeEditor binds UI loads default layout and renders initial preview
     ["applyLoadedLayout", loaded],
     ["renderAll"],
     ["renderPreview"],
+    ["onVehicleLiveEvent", "onVehicleLiveEvent"],
   ]);
 });
 
 test("initializeEditor tolerates missing palette and vehicle profiles in metadata", async () => {
-  const state = { appLanguage: "en" };
+  const state = { appLanguage: "en", vehicleLive: {} };
   const dom = { languageSelect: { value: "" } };
 
   await Bootstrap.initializeEditor(state, dom, {

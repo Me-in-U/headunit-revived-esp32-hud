@@ -12,7 +12,7 @@
     deps.applyLoadedLayout(loaded);
     deps.renderAll();
     await deps.renderPreview();
-    if (deps.hudEditor.onVehicleLiveEvent) {
+    if (deps.hudEditor.onVehicleLiveEvent && typeof deps.handlers.onVehicleLiveEvent === "function") {
       state.vehicleLive.unsubscribe = deps.hudEditor.onVehicleLiveEvent(deps.handlers.onVehicleLiveEvent);
     }
   }

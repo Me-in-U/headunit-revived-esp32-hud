@@ -51,7 +51,7 @@
 
 .connection-layout {
   display: grid;
-  grid-template-columns: minmax(0, 7fr) minmax(0, 3fr);
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
   gap: 12px;
   align-items: start;
   min-width: 0;
@@ -88,6 +88,7 @@
 
 .connection-card {
   gap: 12px;
+  align-self: stretch;
 }
 
 .live-log-panel {
@@ -127,8 +128,19 @@
 
 .connection-grid input,
 .profile-editor input,
+.profile-editor select,
 .field-grid input {
   width: 100%;
+}
+
+.profile-editor select {
+  min-height: 30px;
+  border: 1px solid rgba(132, 146, 160, 0.28);
+  border-radius: 7px;
+  background: rgba(9, 13, 18, 0.78);
+  color: var(--text);
+  padding: 6px 8px;
+  font-size: 12px;
 }
 
 .field-grid {
@@ -138,6 +150,10 @@
 
 .input-field {
   min-width: 0;
+}
+
+.input-field.wide {
+  grid-column: span 2;
 }
 
 .check-row {
@@ -169,6 +185,23 @@
   width: 100%;
 }
 
+.obd-pid-editor {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.obd-pid-signed {
+  align-self: end;
+  min-height: 30px;
+}
+
+.compact-actions {
+  align-items: stretch;
+}
+
+.compact-actions .inline-button {
+  flex: 1 1 130px;
+}
+
 .selection-status {
   min-height: 30px;
   display: flex;
@@ -186,15 +219,16 @@
 .com-port-list {
   display: grid;
   gap: 7px;
-  min-height: 46px;
-  max-height: 150px;
+  min-height: 74px;
+  max-height: 168px;
   overflow: auto;
 }
 
 .obd-device-row,
 .com-port-row {
   width: 100%;
-  min-height: 36px;
+  min-height: 42px;
+  height: auto;
   border: 1px solid rgba(132, 146, 160, 0.24);
   border-radius: 7px;
   background: rgba(9, 13, 18, 0.64);
@@ -204,6 +238,30 @@
   font-size: 12px;
   line-height: 1.35;
   overflow-wrap: anywhere;
+  white-space: normal;
+}
+
+.com-port-row {
+  display: grid;
+  gap: 3px;
+  align-content: start;
+}
+
+.port-title,
+.port-meta {
+  display: block;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.port-title {
+  color: var(--text);
+  font-weight: 800;
+}
+
+.port-meta {
+  color: var(--muted);
+  font-size: 11px;
 }
 
 .obd-device-row:hover,
@@ -241,6 +299,18 @@
   gap: 8px;
 }
 
+.connection-button-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 8px;
+  width: 100%;
+}
+
+.connection-button-row .inline-button {
+  min-width: 0;
+  width: 100%;
+}
+
 .sample-row {
   display: grid;
   grid-template-columns: minmax(0, 1fr);
@@ -257,14 +327,67 @@
 }
 
 .connection-status {
-  min-height: 30px;
+  min-height: 42px;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 9px;
+  align-items: center;
   border: 1px solid rgba(132, 146, 160, 0.24);
   border-radius: 7px;
+  background: rgba(9, 13, 18, 0.58);
   color: var(--soft);
-  padding: 7px 9px;
+  padding: 8px 10px;
   font-size: 12px;
   line-height: 1.35;
   overflow-wrap: anywhere;
+}
+
+.status-dot {
+  width: 11px;
+  height: 11px;
+  border-radius: 999px;
+  background: #7d8b9a;
+  box-shadow: 0 0 0 1px rgba(125, 139, 154, 0.24);
+}
+
+.status-copy {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+.status-label {
+  display: block;
+  color: var(--text);
+  font-size: 12px;
+  font-weight: 850;
+  line-height: 1.2;
+}
+
+.status-detail {
+  display: block;
+  color: var(--muted);
+  font-size: 11px;
+  line-height: 1.35;
+  overflow-wrap: anywhere;
+}
+
+.connection-status[data-state="connecting"],
+.live-status-item strong[data-state="connecting"] {
+  border-color: rgba(64, 167, 255, 0.52);
+  color: #d7ecff;
+}
+
+.connection-status[data-state="connecting"] .status-label,
+.live-status-item strong[data-state="connecting"] .status-label {
+  color: #d7ecff;
+}
+
+.connection-status[data-state="connecting"] .status-dot,
+.live-status-item strong[data-state="connecting"] .status-dot {
+  background: #40a7ff;
+  box-shadow: 0 0 0 1px rgba(64, 167, 255, 0.32);
+  animation: statusPulse 1.2s ease-out infinite;
 }
 
 .connection-status[data-state="live"] {
@@ -272,9 +395,66 @@
   color: #d8ffe5;
 }
 
+.connection-status[data-state="live"] .status-label,
+.live-status-item strong[data-state="live"] .status-label {
+  color: #d8ffe5;
+}
+
+.connection-status[data-state="live"] .status-dot,
+.live-status-item strong[data-state="live"] .status-dot {
+  background: #24d36b;
+  box-shadow: 0 0 0 1px rgba(36, 211, 107, 0.32);
+  animation: statusPulse 1.6s ease-out infinite;
+}
+
+.connection-status[data-state="stale"],
+.live-status-item strong[data-state="stale"] {
+  border-color: rgba(255, 198, 86, 0.48);
+  color: #ffe2a8;
+}
+
+.connection-status[data-state="stale"] .status-label,
+.live-status-item strong[data-state="stale"] .status-label {
+  color: #ffe2a8;
+}
+
+.connection-status[data-state="stale"] .status-dot,
+.live-status-item strong[data-state="stale"] .status-dot {
+  background: #ffc656;
+  box-shadow: 0 0 0 1px rgba(255, 198, 86, 0.32);
+}
+
 .connection-status[data-state="error"] {
   border-color: rgba(255, 93, 93, 0.52);
   color: #ffc6c6;
+}
+
+.connection-status[data-state="error"] .status-label,
+.live-status-item strong[data-state="error"] .status-label {
+  color: #ffc6c6;
+}
+
+.connection-status[data-state="error"] .status-dot,
+.live-status-item strong[data-state="error"] .status-dot {
+  background: #ff5d5d;
+  box-shadow: 0 0 0 1px rgba(255, 93, 93, 0.34);
+}
+
+.connection-status[data-state="idle"] .status-label,
+.live-status-item strong[data-state="idle"] .status-label {
+  color: var(--soft);
+}
+
+@keyframes statusPulse {
+  0% {
+    box-shadow: 0 0 0 0 currentColor;
+  }
+  70% {
+    box-shadow: 0 0 0 7px rgba(64, 167, 255, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(64, 167, 255, 0);
+  }
 }
 
 .live-status-grid {
@@ -299,8 +479,24 @@
   font-weight: 700;
 }
 
-.live-status-item strong {
+.live-status-item .status-dot {
   display: block;
+}
+
+.live-status-item .status-copy {
+  display: grid;
+}
+
+.live-status-item .status-detail {
+  color: var(--muted);
+  font-weight: 650;
+}
+
+.live-status-item strong {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 7px;
+  align-items: center;
   margin-top: 5px;
   color: var(--soft);
   font-size: 12px;
@@ -347,11 +543,125 @@
   font-weight: 800;
 }
 
+.obd-section {
+  display: grid;
+  gap: 8px;
+  min-width: 0;
+  overflow: visible;
+}
+
+.obd-values-section {
+  margin-top: 2px;
+}
+
+.obd-raw-section {
+  margin-top: 8px;
+  padding-top: 10px;
+  border-top: 1px solid rgba(132, 146, 160, 0.18);
+}
+
 .analysis-list {
   display: grid;
   gap: 6px;
+  min-width: 0;
   max-height: 180px;
   overflow: auto;
+}
+
+.obd-value-list {
+  display: block;
+  max-height: none;
+  min-height: 0;
+  overflow: visible;
+}
+
+.obd-value-table {
+  display: grid;
+  gap: 0;
+  width: 100%;
+  min-width: 0;
+  overflow: visible;
+  border: 1px solid rgba(132, 146, 160, 0.24);
+  border-radius: 7px;
+  background: rgba(9, 13, 18, 0.64);
+}
+
+.obd-raw-list {
+  max-height: 180px;
+  overflow: auto;
+}
+
+.obd-value-row {
+  display: grid;
+  grid-template-columns: minmax(120px, 1.25fr) minmax(76px, 0.8fr) 64px minmax(96px, 1fr) minmax(126px, auto);
+  gap: 8px;
+  align-items: start;
+  border-bottom: 1px solid rgba(132, 146, 160, 0.16);
+  color: var(--soft);
+  padding: 7px 9px;
+  font-size: 11px;
+  line-height: 1.35;
+}
+
+.obd-value-row:last-child {
+  border-bottom: 0;
+}
+
+.obd-value-row span {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.obd-value-header {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  background: #132031;
+  color: var(--muted);
+  font-weight: 800;
+}
+
+.obd-value-empty {
+  grid-template-columns: 1fr;
+  color: var(--muted);
+}
+
+.obd-value-action {
+  display: flex;
+  gap: 6px;
+  justify-content: flex-end;
+}
+
+.obd-bind-button,
+.obd-define-button {
+  min-height: 24px;
+  min-width: 56px;
+  border: 1px solid rgba(64, 167, 255, 0.34);
+  border-radius: 6px;
+  background: rgba(64, 167, 255, 0.1);
+  color: #d7ecff;
+  padding: 3px 8px;
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.obd-define-button {
+  border-color: rgba(255, 198, 86, 0.38);
+  background: rgba(255, 198, 86, 0.08);
+  color: #ffe2a8;
+}
+
+.obd-bind-button:not(:disabled):hover,
+.obd-define-button:not(:disabled):hover {
+  border-color: rgba(36, 211, 107, 0.55);
+  background: rgba(36, 211, 107, 0.12);
+  color: #d8ffe5;
+}
+
+.obd-bind-button:disabled,
+.obd-define-button:disabled {
+  cursor: default;
+  opacity: 0.42;
 }
 
 .live-log-list {
@@ -362,6 +672,7 @@
 }
 
 .analysis-row {
+  min-width: 0;
   border: 1px solid rgba(132, 146, 160, 0.2);
   border-radius: 7px;
   background: rgba(9, 13, 18, 0.64);
@@ -370,6 +681,9 @@
   font-family: Consolas, "Cascadia Mono", monospace;
   font-size: 11px;
   line-height: 1.35;
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
+  word-break: break-word;
 }
 
 .decoded-preview {
@@ -393,5 +707,32 @@
 
   .live-status-grid {
     grid-template-columns: 1fr;
+  }
+
+  .obd-value-row {
+    grid-template-columns: minmax(0, 1fr) minmax(72px, auto);
+  }
+
+  .obd-value-row span:nth-child(3),
+  .obd-value-row span:nth-child(4) {
+    color: var(--muted);
+  }
+
+  .obd-value-action {
+    grid-column: 1 / -1;
+    justify-content: stretch;
+  }
+
+  .obd-bind-button,
+  .obd-define-button {
+    width: 100%;
+  }
+
+  .obd-pid-editor {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .input-field.wide {
+    grid-column: auto;
   }
 }

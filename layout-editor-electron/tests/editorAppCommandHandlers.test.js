@@ -2,6 +2,7 @@ const assert = require("node:assert/strict");
 const test = require("node:test");
 
 const CommandHandlers = require("../src/renderer/editorAppCommandHandlers.js");
+const VehicleLiveState = require("../src/renderer/editorVehicleLiveState.js");
 
 test("createAppCommandHandlers routes command context background pointer history and file handlers", async () => {
   const calls = [];
@@ -79,10 +80,14 @@ test("createAppCommandHandlers routes command context background pointer history
         calls.push(["weather", actualState, hudEditor, navigatorRef, deps.name]),
     },
     vehicleLiveActions: {
-      scanComPortsCommand: async (actualState, hudEditor, deps) =>
-        calls.push(["scanComPorts", actualState, hudEditor, deps.name]),
+      scanComPortsCommand: async (actualState, hudEditor, actualDom, deps, options) =>
+        calls.push(["scanComPorts", actualState, hudEditor, actualDom, deps.name, options]),
       selectComPortCommand: (actualState, device, actualDom, deps) =>
         calls.push(["selectComPort", actualState, device, actualDom, deps.name]),
+      selectCanPortCommand: (actualState, device, actualDom, deps) =>
+        calls.push(["selectCanPort", actualState, device, actualDom, deps.name]),
+      selectObdSerialPortCommand: (actualState, device, actualDom, deps) =>
+        calls.push(["selectObdSerialPort", actualState, device, actualDom, deps.name]),
       selectObdDeviceAndConnectCommand: async (actualState, hudEditor, address, actualDom, deps) =>
         calls.push(["selectObdDevice", actualState, hudEditor, address, actualDom, deps.name]),
     },
@@ -107,7 +112,10 @@ test("createAppCommandHandlers routes command context background pointer history
   await handlers.exportFieldPack();
   await handlers.fetchWeather();
   handlers.onVehicleChange();
+  await handlers.scanObdComPorts();
   await handlers.scanComPorts();
+  handlers.selectObdSerialPort("COM5");
+  handlers.selectCanPort("COM3");
   handlers.selectComPort("COM7");
   await handlers.selectObdDevice("AA:BB");
   handlers.onScreenChange();
@@ -154,6 +162,12 @@ test("createAppCommandHandlers routes command context background pointer history
     "deps:vehicleLive",
     "scanComPorts",
     "deps:vehicleLive",
+    "scanComPorts",
+    "deps:vehicleLive",
+    "selectObdSerialPort",
+    "deps:vehicleLive",
+    "selectCanPort",
+    "deps:vehicleLive",
     "selectComPort",
     "deps:vehicleLive",
     "selectObdDevice",
@@ -198,12 +212,123 @@ test("createAppCommandHandlers routes command context background pointer history
   ]);
 });
 
+test("source-specific live handlers connect and disconnect OBD and CAN independently", async () => {
+  const calls = [];
+  const runtime = { runtime: true };
+  const state = {
+    vehicleLive: VehicleLiveState.createVehicleLiveState(),
+  };
+  const dom = {
+    obdEnabled: { checked: true },
+    obdSerialPort: { value: "COM5" },
+    obdBleMac: { value: "" },
+    obdBleRxUuid: { value: "" },
+    obdBleTxUuid: { value: "" },
+    canEnabled: { checked: true },
+  };
+  const modules = {
+    appDeps: dependencyFactories(calls, runtime),
+    vehicleLiveActions: {
+      prepareVehicleLiveDomForStart: (actualState, actualDom) => calls.push(["prepare", actualState, actualDom]),
+      scanComPortsCommand: async (actualState) => {
+        calls.push(["scanComPorts"]);
+        actualState.vehicleLive.obdComPorts = [{ device: "COM5", likelyObdSerial: true }];
+      },
+      buildVehicleLiveConfig: (actualState, actualDom, options) => {
+        calls.push(["build", actualState, actualDom, options]);
+        return { obd: { enabled: options.enabledSources.obd }, can: { enabled: options.enabledSources.can } };
+      },
+      startVehicleLiveCommand: async (actualState, hudEditor, config, deps) =>
+        calls.push(["startLive", actualState, hudEditor, config, deps.name]),
+      stopVehicleLiveCommand: async (actualState, hudEditor, deps) =>
+        calls.push(["stopLive", actualState, hudEditor, deps.name]),
+      handleVehicleLiveEventCommand: (actualState, event) => calls.push(["event", actualState, event]),
+    },
+  };
+
+  const handlers = CommandHandlers.createAppCommandHandlers({
+    state,
+    dom,
+    modules,
+    refs: { windowRef: { hudEditor: {} } },
+    runtimeFactory: () => runtime,
+    selectedElement: () => null,
+  });
+
+  await handlers.startObdLive();
+  await handlers.startCanLive();
+  await handlers.stopObdLive();
+  await handlers.stopCanLive();
+
+  const buildOptions = calls.filter((call) => call[0] === "build").map((call) => call[3].enabledSources);
+  assert.deepEqual(buildOptions, [
+    { obd: true, can: false },
+    { obd: true, can: true },
+    { obd: false, can: true },
+  ]);
+  assert.equal(calls.some((call) => call[0] === "stopLive"), true);
+  assert.deepEqual(state.vehicleLive.desiredInputs, { obd: false, can: false });
+});
+
+test("source-specific OBD start blocks stale serial ports before launching worker", async () => {
+  const calls = [];
+  const runtime = { runtime: true };
+  const state = {
+    vehicleLive: VehicleLiveState.createVehicleLiveState(),
+  };
+  const dom = {
+    obdEnabled: { checked: true },
+    obdSerialPort: { value: "COM5" },
+    obdBleMac: { value: "" },
+    obdBleRxUuid: { value: "" },
+    obdBleTxUuid: { value: "" },
+    canEnabled: { checked: false },
+  };
+  const modules = {
+    appDeps: dependencyFactories(calls, runtime),
+    vehicleLiveActions: {
+      prepareVehicleLiveDomForStart: () => calls.push(["prepare"]),
+      scanComPortsCommand: async () => calls.push(["scanComPorts"]),
+      buildVehicleLiveConfig: () => {
+        calls.push(["build"]);
+        return {};
+      },
+      startVehicleLiveCommand: async () => calls.push(["startLive"]),
+      handleVehicleLiveEventCommand: (actualState, event) => {
+        calls.push(["event", event]);
+        actualState.vehicleLive.status[event.source] = event;
+      },
+    },
+  };
+
+  const handlers = CommandHandlers.createAppCommandHandlers({
+    state,
+    dom,
+    modules,
+    refs: { windowRef: { hudEditor: {} } },
+    runtimeFactory: () => runtime,
+    selectedElement: () => null,
+  });
+
+  await handlers.startObdLive();
+
+  assert.equal(calls.some((call) => call[0] === "scanComPorts"), true);
+  assert.equal(calls.some((call) => call[0] === "startLive"), false);
+  const event = calls.find((call) => call[0] === "event")[1];
+  assert.equal(event.source, "obd");
+  assert.equal(event.state, "error");
+  assert.match(event.detail, /COM5이 현재 Windows COM 목록에 없습니다/);
+});
+
 function dependencyFactories(calls, expectedRuntime) {
   function dependency(name) {
     return (runtime) => {
       calls.push([`deps:${name}`, runtime]);
       assert.equal(runtime, expectedRuntime);
-      return { name };
+      return {
+        name,
+        setStatus: (message, type) => calls.push(["setStatus", message, type]),
+      };
     };
   }
 

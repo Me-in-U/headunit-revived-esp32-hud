@@ -11,8 +11,19 @@ test("connection panel keeps OBD and CAN setup only", () => {
   const connectionPanel = sectionContent(content, "connectionPanel", "canAnalysisPanel");
 
   assert.match(connectionPanel, /class="connection-layout"/);
-  assert.match(connectionPanel, /OBD Bluetooth/);
-  assert.match(connectionPanel, /CANable USB/);
+  assert.match(connectionPanel, /OBD 연결/);
+  assert.match(connectionPanel, /id="obdSerialPort"/);
+  assert.match(connectionPanel, /id="obdSerialPortList"/);
+  assert.match(connectionPanel, /id="scanObdComPortsBtn"/);
+  assert.match(connectionPanel, /id="startObdLiveBtn"/);
+  assert.match(connectionPanel, /id="stopObdLiveBtn"/);
+  assert.match(connectionPanel, /Android-vlink/);
+  assert.match(connectionPanel, /CANable 연결/);
+  assert.match(connectionPanel, /id="comPortList"/);
+  assert.match(connectionPanel, /id="startCanLiveBtn"/);
+  assert.match(connectionPanel, /id="stopCanLiveBtn"/);
+  assert.doesNotMatch(connectionPanel, /id="startVehicleLiveBtn"/);
+  assert.doesNotMatch(connectionPanel, /id="stopVehicleLiveBtn"/);
   assert.doesNotMatch(connectionPanel, /id="liveSampleStatus"/);
   assert.doesNotMatch(connectionPanel, /id="copyLiveSampleBtn"/);
 });
@@ -28,6 +39,23 @@ test("CAN analysis panel owns the live sample and live log rail", () => {
   assert.match(canPanel, /id="liveLogList"/);
   assert.match(canPanel, /id="liveSampleStatus"/);
   assert.match(canPanel, /id="copyLiveSampleBtn"/);
+});
+
+test("OBD analysis panel separates decoded values from raw responses", () => {
+  const content = fs.readFileSync(indexPath, "utf8");
+  const start = content.indexOf('id="obdAnalysisPanel"');
+  const end = content.indexOf('class="sidebar inspector-panel"');
+  assert.notEqual(start, -1, "obdAnalysisPanel should exist");
+  assert.notEqual(end, -1, "inspector panel should exist");
+  const obdPanel = content.slice(start, end);
+
+  assert.match(obdPanel, /디코딩 값/);
+  assert.match(obdPanel, /class="obd-section obd-values-section"/);
+  assert.match(obdPanel, /id="obdAnalysisStatus"/);
+  assert.match(obdPanel, /id="obdValueList"/);
+  assert.match(obdPanel, /Raw 응답/);
+  assert.match(obdPanel, /class="obd-section obd-raw-section"/);
+  assert.match(obdPanel, /id="obdRecordList"/);
 });
 
 function sectionContent(content, startId, nextId) {

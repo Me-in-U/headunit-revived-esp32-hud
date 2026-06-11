@@ -4,6 +4,23 @@
   overflow: hidden;
 }
 
+.canvas-panel.is-collapsed {
+  grid-template-rows: auto;
+}
+
+.canvas-panel.is-collapsed .preview-frame,
+.canvas-panel.is-collapsed .statusbar {
+  display: none;
+}
+
+.canvas-panel.is-collapsed .canvas-header {
+  border-bottom: 0;
+}
+
+.canvas-toggle-button {
+  min-width: 92px;
+}
+
 .preview-frame {
   min-height: 0;
   display: grid;

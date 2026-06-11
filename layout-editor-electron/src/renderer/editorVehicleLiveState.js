@@ -6,13 +6,24 @@
         obd: { state: "idle", detail: "", updatedAt: "" },
         can: { state: "idle", detail: "", updatedAt: "" },
       },
+      desiredInputs: { obd: false, can: false },
       mergedState: {},
       canFrames: [],
       canSummary: { frame_count: 0, unique_id_count: 0, ids: [] },
       comPorts: [],
+      obdComPorts: [],
+      canComPorts: [],
+      lastObdComScanSummary: "",
+      lastCanComScanSummary: "",
       selectedComPort: null,
+      selectedCanPort: null,
+      selectedObdSerialPort: null,
       comPortScanState: "idle",
       comPortLastError: "",
+      obdComPortScanState: "idle",
+      obdComPortLastError: "",
+      canComPortScanState: "idle",
+      canComPortLastError: "",
       obdRecords: [],
       obdDevices: [],
       selectedObdDevice: null,
@@ -55,7 +66,7 @@
     }
     if (event.type === "obd_record" && event.record) {
       vehicleLive.obdRecords.unshift(clone(event.record));
-      vehicleLive.obdRecords = vehicleLive.obdRecords.slice(0, 80);
+      vehicleLive.obdRecords = vehicleLive.obdRecords.slice(0, 300);
       return true;
     }
     return false;
@@ -100,6 +111,17 @@
     return vehicleLive.selectedComPort;
   }
 
+  function setSelectedCanPort(vehicleLive, port) {
+    vehicleLive.selectedCanPort = port ? clone(port) : null;
+    vehicleLive.selectedComPort = vehicleLive.selectedCanPort;
+    return vehicleLive.selectedCanPort;
+  }
+
+  function setSelectedObdSerialPort(vehicleLive, port) {
+    vehicleLive.selectedObdSerialPort = port ? clone(port) : null;
+    return vehicleLive.selectedObdSerialPort;
+  }
+
   function sortedObdDevices(devices) {
     return (Array.isArray(devices) ? devices : [])
       .map((device, index) => ({ device, index, score: obdDeviceScore(device) }))
@@ -121,7 +143,7 @@
 
   function comPortScore(port) {
     const text = `${port?.device || ""} ${port?.description || ""} ${port?.hwid || ""} ${port?.manufacturer || ""} ${port?.product || ""}`.toLowerCase();
-    return port?.likelyCanable || /\b(canable|candlelight|candle|slcan|usb to can|can adapter)\b/.test(text) ? 1 : 0;
+    return port?.likelyCanable || /\b(cantact|canable|candlelight|candle|slcan|usb to can|can adapter)\b/.test(text) ? 1 : 0;
   }
 
   function comPortNumber(port) {
@@ -183,6 +205,65 @@
     return true;
   }
 
+  function upsertObdPidDefinition(state, definition) {
+    const vehicle = selectedVehicle(state.layout);
+    const command = normalizeObdPidCommand(definition?.command || definition?.pid);
+    const label = String(definition?.label || definition?.name || "").trim();
+    if (!vehicle || !command || !label) {
+      return false;
+    }
+    const normalized = {
+      command,
+      label,
+      unit: String(definition.unit || "").trim(),
+      path: String(definition.path || "").trim() || `vehicle.obd_${command.toLowerCase()}`,
+      confirmed: true,
+    };
+    for (const [sourceKey, targetKey] of [
+      ["byteIndex", "byte_index"],
+      ["byte_length", "byte_length"],
+      ["length", "byte_length"],
+      ["byteLength", "byte_length"],
+    ]) {
+      if (definition[sourceKey] !== undefined && definition[sourceKey] !== "") {
+        normalized[targetKey] = Number.parseInt(definition[sourceKey], 10);
+      }
+    }
+    for (const key of ["scale", "offset"]) {
+      if (definition[key] !== undefined && definition[key] !== "") {
+        normalized[key] = Number.parseFloat(definition[key]);
+      }
+    }
+    if (definition.endian) {
+      normalized.endian = definition.endian;
+    }
+    if (definition.signed !== undefined) {
+      normalized.signed = Boolean(definition.signed);
+    }
+    if (definition.referenceValue !== undefined && String(definition.referenceValue).trim()) {
+      normalized.reference_value = String(definition.referenceValue).trim();
+    }
+    vehicle.obd_pid_definitions = Array.isArray(vehicle.obd_pid_definitions) ? vehicle.obd_pid_definitions : [];
+    const index = vehicle.obd_pid_definitions.findIndex((item) => normalizeObdPidCommand(item.command || item.pid) === command);
+    if (index >= 0) {
+      vehicle.obd_pid_definitions[index] = { ...vehicle.obd_pid_definitions[index], ...normalized };
+    } else {
+      vehicle.obd_pid_definitions.push(normalized);
+    }
+    return normalized;
+  }
+
+  function normalizeObdPidCommand(value) {
+    const text = String(value || "").replace(/[^0-9a-f]/gi, "").toUpperCase();
+    if (text.length === 2) {
+      return `01${text}`;
+    }
+    if (text.length === 4 && text.startsWith("01")) {
+      return text;
+    }
+    return "";
+  }
+
   function mergeObjects(left, right) {
     const result = clone(left || {});
     deepMerge(result, right || {});
@@ -215,12 +296,15 @@
     mergeVehicleLiveEvent,
     previewStateOverride,
     selectedVehicle,
+    setSelectedCanPort,
     setSelectedObdDevice,
     setSelectedObdPair,
     setSelectedComPort,
+    setSelectedObdSerialPort,
     sortedComPorts,
     sortedObdDevices,
     upsertConfirmedCanSignal,
+    upsertObdPidDefinition,
   };
 
   if (typeof module !== "undefined" && module.exports) {

@@ -64,13 +64,14 @@
 
       <main class="workspace">
         <section class="editor-stack">
-          <section class="canvas-panel">
+          <section id="canvasPanel" class="canvas-panel">
             <div class="canvas-header">
               <div>
                 <h1 data-i18n="canvasTitle">1920 x 480 HUD Canvas</h1>
                 <p id="canvasMeta">Pi renderer preview</p>
               </div>
               <div class="canvas-actions">
+                <button id="toggleCanvasBtn" class="inline-button canvas-toggle-button" type="button" aria-expanded="true">Canvas 접기</button>
                 <button id="zoomFitBtn" class="inline-button" data-i18n="fit">Fit</button>
                 <button id="duplicateBtn" class="inline-button" data-i18n="duplicate">Duplicate</button>
                 <button id="deleteBtn" class="inline-button danger-ghost" data-i18n="delete">Delete</button>
@@ -112,21 +113,38 @@
             <section id="connectionPanel" class="tool-panel vehicle-tool-panel" hidden>
               <div class="connection-layout">
                 <div class="connection-card connection-card-obd">
+                  <div id="obdConnectionStatus" class="connection-status">idle</div>
                   <div class="section-title">
                     <div>
-                      <h3>OBD Bluetooth</h3>
-                      <p class="panel-help">Search nearby ELM327/iCar adapters, choose a device, and the editor will inspect UUIDs and connect automatically.</p>
+                      <h3>OBD 연결</h3>
+                      <p class="panel-help">왼쪽은 OBD 전용입니다. 실시간 차량 값은 Android-vlink Classic Bluetooth COM을 사용하고, 필요하면 BLE 검사를 사용하세요.</p>
                     </div>
-                    <button id="scanObdBtn" class="inline-button primary" type="button">Search Bluetooth</button>
+                    <div class="button-row compact-actions">
+                      <button id="scanObdComPortsBtn" class="inline-button primary" type="button">OBD COM 새로고침</button>
+                      <button id="scanObdBtn" class="inline-button" type="button">BLE 검색</button>
+                    </div>
                   </div>
-                  <div id="obdSelectedStatus" class="selection-status">No OBD adapter selected</div>
+                  <div class="button-row connection-button-row">
+                    <button id="startObdLiveBtn" class="inline-button primary" type="button">OBD 연결</button>
+                    <button id="stopObdLiveBtn" class="inline-button danger-ghost" type="button">OBD 연결 해제</button>
+                  </div>
+                  <div id="obdSelectedStatus" class="selection-status">OBD 어댑터 선택 안 됨</div>
+                  <div id="obdSerialPortList" class="com-port-list" role="listbox" aria-label="OBD serial COM ports"></div>
                   <div id="obdDeviceList" class="obd-device-list" role="listbox" aria-label="OBD Bluetooth devices"></div>
                   <details id="obdAdvancedSettings" class="advanced-settings">
-                    <summary>Advanced OBD settings</summary>
+                    <summary>OBD 고급 설정</summary>
                     <div class="field-grid">
                       <label class="check-row">
                         <input id="obdEnabled" type="checkbox" checked />
-                        <span>Use OBD BLE</span>
+                        <span>OBD 사용</span>
+                      </label>
+                      <label class="input-field">
+                        <span>시리얼 COM</span>
+                        <input id="obdSerialPort" type="text" placeholder="COM8 for Android-vlink" />
+                      </label>
+                      <label class="input-field">
+                        <span>시리얼 Baud</span>
+                        <input id="obdSerialBaud" type="number" value="38400" />
                       </label>
                       <label class="input-field">
                         <span>BLE MAC</span>
@@ -141,105 +159,104 @@
                         <input id="obdBleTxUuid" type="text" placeholder="write characteristic" />
                       </label>
                       <label class="input-field">
-                        <span>Timeout seconds</span>
+                        <span>타임아웃(초)</span>
                         <input id="obdTimeout" type="number" min="0.5" step="0.5" value="2" />
                       </label>
-                      <button id="inspectObdBtn" class="inline-button" type="button">Inspect selected UUIDs</button>
+                      <button id="inspectObdBtn" class="inline-button" type="button">선택 UUID 검사</button>
                     </div>
                   </details>
-                  <div id="obdConnectionStatus" class="connection-status">idle</div>
                 </div>
                 <div class="connection-card connection-card-can">
+                  <div id="canConnectionStatus" class="connection-status">idle</div>
                   <div class="section-title">
                     <div>
-                      <h3>CANable USB</h3>
-                      <p class="panel-help">Optional raw CAN input. Refresh COM ports, select the CANable USB serial device, or edit the channel manually.</p>
+                      <h3>CANable 연결</h3>
+                      <p class="panel-help">오른쪽은 CANable 전용입니다. Raw CAN 프레임을 읽을 CANtact/CANable USB 시리얼 장치를 선택하세요.</p>
                     </div>
-                    <button id="scanComPortsBtn" class="inline-button primary" type="button">Refresh COM ports</button>
+                    <button id="scanComPortsBtn" class="inline-button primary" type="button">COM 포트 새로고침</button>
                   </div>
-                  <div id="comSelectedStatus" class="selection-status">No COM port selected</div>
+                  <div class="button-row connection-button-row">
+                    <button id="startCanLiveBtn" class="inline-button primary" type="button">CANable 연결</button>
+                    <button id="stopCanLiveBtn" class="inline-button danger-ghost" type="button">CANable 연결 해제</button>
+                  </div>
+                  <div id="comSelectedStatus" class="selection-status">COM 포트 선택 안 됨</div>
                   <div id="comPortList" class="com-port-list" role="listbox" aria-label="Connected COM ports"></div>
                   <div class="field-grid">
                     <label class="check-row">
                       <input id="canEnabled" type="checkbox" checked />
-                      <span>Use CANable SLCAN</span>
+                      <span>CANable SLCAN 사용</span>
                     </label>
                     <label class="input-field">
-                      <span>Channel</span>
+                      <span>채널</span>
                       <input id="canChannel" type="text" placeholder="COM7@115200" />
                     </label>
                     <label class="input-field">
-                      <span>Bitrate</span>
+                      <span>비트레이트</span>
                       <input id="canBitrate" type="number" value="500000" />
                     </label>
                     <label class="check-row">
                       <input id="canListenOnly" type="checkbox" checked />
-                      <span>Listen-only</span>
+                      <span>수신 전용</span>
                     </label>
                   </div>
-                  <div class="button-row">
-                    <button id="startVehicleLiveBtn" class="inline-button" type="button">Connect configured inputs</button>
-                    <button id="stopVehicleLiveBtn" class="inline-button danger-ghost" type="button">Disconnect</button>
-                  </div>
-                  <div id="canConnectionStatus" class="connection-status">idle</div>
                 </div>
               </div>
             </section>
             <section id="canAnalysisPanel" class="tool-panel vehicle-tool-panel" hidden>
               <div class="can-analysis-layout">
                 <div class="can-analysis-main">
-                  <p class="panel-help">Use live CAN frames to narrow down a frame ID and byte/bit location. Save only signals that have been verified on the real vehicle.</p>
+                  <p class="panel-help">실시간 CAN 프레임으로 프레임 ID와 Byte/bit 위치를 좁히세요. 실제 차량에서 확인된 신호만 저장하세요.</p>
                   <div class="analysis-metrics">
-                    <div><span>Frames</span><strong id="canFrameCount">0</strong></div>
-                    <div><span>Last ID</span><strong id="canLastId">--</strong></div>
+                    <div><span>프레임</span><strong id="canFrameCount">0</strong></div>
+                    <div><span>마지막 ID</span><strong id="canLastId">--</strong></div>
                   </div>
                   <div class="profile-editor">
                     <label class="input-field">
-                      <span>Frame ID</span>
+                      <span>프레임 ID</span>
                       <input id="canSignalFrameId" type="text" placeholder="0x316" />
                     </label>
                     <label class="input-field">
-                      <span>HUD state path</span>
+                      <span>HUD 상태 경로</span>
                       <input id="canSignalName" type="text" placeholder="vehicle.gear_actual" />
                     </label>
                     <label class="input-field">
-                      <span>Start byte</span>
+                      <span>시작 Byte</span>
                       <input id="canSignalStartByte" type="number" min="0" placeholder="0" />
                     </label>
                     <label class="input-field">
-                      <span>Byte length</span>
+                      <span>Byte 길이</span>
                       <input id="canSignalLength" type="number" min="1" placeholder="1" />
                     </label>
                     <label class="input-field">
-                      <span>Start bit</span>
+                      <span>시작 bit</span>
                       <input id="canSignalStartBit" type="number" min="0" max="7" placeholder="0" />
                     </label>
                     <label class="input-field">
-                      <span>Bit length</span>
+                      <span>bit 길이</span>
                       <input id="canSignalBitLength" type="number" min="1" placeholder="1" />
                     </label>
                     <label class="input-field">
-                      <span>Scale</span>
+                      <span>배율</span>
                       <input id="canSignalScale" type="number" step="0.001" placeholder="1" />
                     </label>
                     <label class="input-field">
-                      <span>Offset</span>
+                      <span>보정값</span>
                       <input id="canSignalOffset" type="number" step="0.001" placeholder="0" />
                     </label>
-                    <button id="saveCanSignalBtn" class="inline-button primary" type="button">Save Signal</button>
+                    <button id="saveCanSignalBtn" class="inline-button primary" type="button">신호 저장</button>
                   </div>
-                  <h3>Summary</h3>
+                  <h3>요약</h3>
                   <div id="canSummaryList" class="analysis-list"></div>
-                  <h3>Frames</h3>
+                  <h3>프레임</h3>
                   <div id="canFrameList" class="analysis-list"></div>
-                  <h3>Decoded preview</h3>
+                  <h3>디코딩 미리보기</h3>
                   <pre id="canDecodedPreview" class="decoded-preview">{}</pre>
                 </div>
                 <aside class="live-log-panel">
                   <div class="section-title">
                     <div>
-                      <h3>Live log</h3>
-                      <p class="panel-help">Latest CAN frames, OBD responses, and copied live sample state while connected.</p>
+                      <h3>실시간 로그</h3>
+                      <p class="panel-help">연결 중 최신 CAN 프레임, OBD 응답, 복사한 실시간 샘플 상태를 보여줍니다.</p>
                     </div>
                   </div>
                   <div class="live-status-grid">
@@ -253,33 +270,91 @@
                     </div>
                   </div>
                   <div class="sample-row live-sample-row">
-                    <span id="liveSampleStatus">No live sample</span>
-                    <button id="copyLiveSampleBtn" class="inline-button" type="button">Copy Live Sample</button>
+                    <span id="liveSampleStatus">실시간 샘플 없음</span>
+                    <button id="copyLiveSampleBtn" class="inline-button" type="button">실시간 샘플 복사</button>
                   </div>
                   <div id="liveLogList" class="live-log-list" aria-label="Recent live events"></div>
                 </aside>
               </div>
             </section>
             <section id="obdAnalysisPanel" class="tool-panel vehicle-tool-panel" hidden>
-              <p class="panel-help">Use OBD analysis to inspect adapter identity, supported PID bitmap, DTCs, and vehicle-specific probe commands before saving them to the vehicle profile.</p>
+              <p class="panel-help">OBD 분석에서 어댑터 정보, 지원 PID, DTC, 차량별 프로브 명령을 확인한 뒤 차량 프로필에 저장하세요.</p>
+              <div id="obdAnalysisStatus" class="connection-status">idle</div>
               <div class="obd-debug">
-                <div><span>Adapter</span><strong id="obdAdapterIdentity">--</strong></div>
-                <div><span>Protocol</span><strong id="obdProtocol">--</strong></div>
-                <div><span>Supported PIDs</span><strong id="obdSupportedPids">--</strong></div>
+                <div><span>어댑터</span><strong id="obdAdapterIdentity">--</strong></div>
+                <div><span>프로토콜</span><strong id="obdProtocol">--</strong></div>
+                <div><span>지원 PID</span><strong id="obdSupportedPids">--</strong></div>
                 <div><span>DTC</span><strong id="obdDtcList">--</strong></div>
               </div>
               <div class="obd-debug">
-                <div><span>Last request</span><strong id="obdLastRequest">--</strong></div>
-                <div><span>Last response</span><strong id="obdLastResponse">--</strong></div>
+                <div><span>마지막 요청</span><strong id="obdLastRequest">--</strong></div>
+                <div><span>마지막 응답</span><strong id="obdLastResponse">--</strong></div>
               </div>
               <div class="profile-editor obd-profile-editor">
                 <label class="input-field">
-                  <span>Probe commands</span>
+                  <span>프로브 명령</span>
                   <input id="obdProbeCommand" type="text" placeholder="ATSH7E0, ATCRA7E8, 2101" />
                 </label>
-                <button id="addObdProbeBtn" class="inline-button primary" type="button">Add Probe</button>
+                <button id="addObdProbeBtn" class="inline-button primary" type="button">프로브 추가</button>
               </div>
-              <div id="obdRecordList" class="analysis-list"></div>
+              <div class="profile-editor obd-pid-editor">
+                <label class="input-field">
+                  <span>PID</span>
+                  <input id="obdPidCommand" type="text" placeholder="0149" />
+                </label>
+                <label class="input-field">
+                  <span>이름</span>
+                  <input id="obdPidLabel" type="text" placeholder="Accelerator pedal" />
+                </label>
+                <label class="input-field">
+                  <span>휴대폰 값</span>
+                  <input id="obdPidReferenceValue" type="text" placeholder="42 %" />
+                </label>
+                <label class="input-field">
+                  <span>단위</span>
+                  <input id="obdPidUnit" type="text" placeholder="%" />
+                </label>
+                <label class="input-field wide">
+                  <span>경로</span>
+                  <input id="obdPidPath" type="text" placeholder="vehicle.accelerator_pedal_pct" />
+                </label>
+                <label class="input-field">
+                  <span>Byte</span>
+                  <input id="obdPidByteIndex" type="number" min="0" placeholder="0" />
+                </label>
+                <label class="input-field">
+                  <span>길이</span>
+                  <input id="obdPidLength" type="number" min="1" max="4" placeholder="raw" />
+                </label>
+                <label class="input-field">
+                  <span>배율</span>
+                  <input id="obdPidScale" type="number" step="0.0001" placeholder="1" />
+                </label>
+                <label class="input-field">
+                  <span>보정값</span>
+                  <input id="obdPidOffset" type="number" step="0.0001" placeholder="0" />
+                </label>
+                <label class="input-field">
+                  <span>엔디언</span>
+                  <select id="obdPidEndian">
+                    <option value="big">big</option>
+                    <option value="little">little</option>
+                  </select>
+                </label>
+                <label class="check-row obd-pid-signed">
+                  <input id="obdPidSigned" type="checkbox" />
+                  <span>부호 있음</span>
+                </label>
+                <button id="saveObdPidBtn" class="inline-button primary" type="button">PID 저장</button>
+              </div>
+              <div class="obd-section obd-values-section">
+                <h3>디코딩 값</h3>
+                <div id="obdValueList" class="analysis-list obd-value-list"></div>
+              </div>
+              <div class="obd-section obd-raw-section">
+                <h3>Raw 응답</h3>
+                <div id="obdRecordList" class="analysis-list obd-raw-list"></div>
+              </div>
             </section>
         </aside>
         </section>

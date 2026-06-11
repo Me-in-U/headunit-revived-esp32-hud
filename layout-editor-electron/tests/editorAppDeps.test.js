@@ -15,6 +15,7 @@ test("editorEventHandlers exposes the complete DOM action handler map", () => {
     "copyLiveSample",
     "deleteSelected",
     "duplicateSelected",
+    "editObdPidDefinition",
     "exportFieldPack",
     "exportSnapshot",
     "fetchWeather",
@@ -30,6 +31,7 @@ test("editorEventHandlers exposes the complete DOM action handler map", () => {
     "onScreenChange",
     "onSimulationToggle",
     "onVehicleChange",
+    "onVehicleLiveEvent",
     "openLayout",
     "redo",
     "renderOverlay",
@@ -37,12 +39,20 @@ test("editorEventHandlers exposes the complete DOM action handler map", () => {
     "resetDefaultLayout",
     "saveCanSignal",
     "saveLayout",
+    "saveObdPidDefinition",
     "scanComPorts",
     "scanObdBle",
+    "scanObdComPorts",
+    "selectCanPort",
     "selectComPort",
     "selectObdDevice",
+    "selectObdSerialPort",
     "selectToolTab",
+    "startCanLive",
+    "startObdLive",
     "startVehicleLive",
+    "stopCanLive",
+    "stopObdLive",
     "stopVehicleLive",
     "undo",
     "validateLayout",
@@ -59,6 +69,12 @@ test("appBootstrapDeps maps startup services and handler bindings", () => {
   assert.equal(deps.documentRef, runtime.documentRef);
   assert.equal(deps.domBindings, runtime.domBindings);
   assert.equal(deps.handlers.saveLayout, runtime.saveLayout);
+  assert.equal(deps.handlers.saveObdPidDefinition, runtime.saveObdPidDefinition);
+  assert.equal(deps.handlers.editObdPidDefinition, runtime.editObdPidDefinition);
+  assert.equal(deps.handlers.scanObdComPorts, runtime.scanObdComPorts);
+  assert.equal(deps.handlers.startObdLive, runtime.startObdLive);
+  assert.equal(deps.handlers.startCanLive, runtime.startCanLive);
+  assert.equal(deps.handlers.onVehicleLiveEvent, runtime.onVehicleLiveEvent);
   assert.equal(deps.hudEditor, runtime.windowRef.hudEditor);
   assert.equal(deps.windowRef, runtime.windowRef);
 });
@@ -154,6 +170,7 @@ function runtimeDeps(calls = []) {
     onKeyDown: fn("onKeyDown"),
     onLanguageChange: fn("onLanguageChange"),
     onSimulationToggle: fn("onSimulationToggle"),
+    onVehicleLiveEvent: fn("onVehicleLiveEvent"),
     onPointerDown: fn("onPointerDown"),
     onPointerMove: fn("onPointerMove"),
     onPointerUp: fn("onPointerUp"),
@@ -184,15 +201,22 @@ function runtimeDeps(calls = []) {
     schedulePreview: fn("schedulePreview"),
     scanComPorts: fn("scanComPorts"),
     scanObdBle: fn("scanObdBle"),
+    scanObdComPorts: fn("scanObdComPorts"),
+    selectCanPort: fn("selectCanPort"),
     selectComPort: fn("selectComPort"),
     selectObdDevice: fn("selectObdDevice"),
+    selectObdSerialPort: fn("selectObdSerialPort"),
     selectedElement: fn("selectedElement"),
     selectToolTab: fn("selectToolTab"),
     selectPaletteVariant: fn("selectPaletteVariant"),
     setStatus: fn("setStatus"),
     showValidationDrawer: fn("showValidationDrawer"),
     snapshotState: fn("snapshotState"),
+    startCanLive: fn("startCanLive"),
+    startObdLive: fn("startObdLive"),
     startVehicleLive: fn("startVehicleLive"),
+    stopCanLive: fn("stopCanLive"),
+    stopObdLive: fn("stopObdLive"),
     stopVehicleLive: fn("stopVehicleLive"),
     topControls: { name: "topControls" },
     translate: (key) => `t:${key}`,
